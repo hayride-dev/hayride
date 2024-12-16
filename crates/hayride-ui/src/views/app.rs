@@ -19,7 +19,6 @@ pub fn App() -> impl IntoView {
             <Routes fallback=|| view! { <div>"Page not found"</div> }>
             <Route path=path!("/") view=Chat/>
             </Routes>
-            <script src="https://cdn.jsdelivr.net/npm/preline/dist/preline.min.js"></script>
             </Router>
         }
     
