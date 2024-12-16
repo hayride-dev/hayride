@@ -1,3 +1,5 @@
+use tauri::{Builder, Manager, Window};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -10,6 +12,23 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            let window = app.get_webview_window("main").expect("Main window not found");
+            window.eval(
+                r#"
+                function waitForPreline() {
+                    if (window.HSStaticMethods && typeof window.HSStaticMethods.autoInit === 'function') {
+                        window.HSStaticMethods.autoInit();
+                        console.log('Preline initialized in Tauri context');
+                    } else {
+                        console.log('Waiting for Preline to load...');
+                        setTimeout(waitForPreline, 100);
+                    }
+                }
+                waitForPreline();
+                "#,
+            )?;
+
             Ok(())
         })
         .run(tauri::generate_context!())
