@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ["*.html", "./src/**/*.rs","node_modules/preline/dist/*.js"],
+    content: ["*.html", "./src/**/*.rs",],
+    daisyui: {
+      themes: ["retro"],
+    },
     theme: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -8,5 +11,5 @@ module.exports = {
       extend: {
       },
     },
-    plugins: [require("preline/plugin")],
+    plugins: [require('daisyui')],
   }

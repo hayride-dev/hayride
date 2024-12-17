@@ -12,7 +12,7 @@ pub fn run() {
                         .build(),
                 )?;
             }
-
+            // TODO :: Remove
             let window = app.get_webview_window("main").expect("Main window not found");
             window.eval(
                 r#"

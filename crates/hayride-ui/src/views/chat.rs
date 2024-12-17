@@ -55,7 +55,6 @@ pub fn Chat() -> impl IntoView {
     let connected = move || ready_state.get() == ConnectionReadyState::Open;
 
     view! {
-        <main id="content">
             <div class="relative h-screen">
                 <div class="max-w-4xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
                     <div class="text-center">
@@ -134,6 +133,12 @@ pub fn Chat() -> impl IntoView {
                 </div>
                 // End Input -->
             </div>
-        </main>
+          <details class="dropdown">
+          <summary class="btn m-1">open or close</summary>
+          <ul class="menu dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+            <li><a>Item 1</a></li>
+            <li><a>Item 2</a></li>
+          </ul>
+        </details>
     }
 }
