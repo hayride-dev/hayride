@@ -7,6 +7,7 @@ module.exports = {
     theme: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        shrikhand: ['"Shrikhand"', 'cursive'],
       },
       extend: {
       },
