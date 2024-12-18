@@ -82,7 +82,7 @@ pub fn Chat() -> impl IntoView {
                 <div class="hero-content text-center">
                   <div class="max-w-xl">
                     <h1 class="text-4xl font-bold">"What can I help with?"</h1>
-                    <div class="bg-base-300 py-6 h-80 overflow-y-auto flex flex-col flex-grow">
+                    <div class="py-6 h-80 overflow-y-auto flex flex-col flex-grow">
                     <ChatTextArea input=input set_input=set_input send=set_send_message />
                 </div>
                   </div>
