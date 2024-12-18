@@ -20,7 +20,7 @@ pub fn App() -> impl IntoView {
         <div class="absolute top-0 right-0 m-4 w-12 z-10">
             <Avatar img_src="https://avatars.githubusercontent.com/u/10167943?v=4".to_string()/>
         </div>
-        <aside class="fixed top-0 left-0 h-full w-64 bg-base-200">
+        <aside class="fixed top-0 left-0 h-full w-64 bg-base-200 rounded-r-xl">
             <Sidebar/>
         </aside>
         <main id="content"  class="flex flex-col flex-1 ml-64 overflow-auto">

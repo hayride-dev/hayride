@@ -9,7 +9,7 @@ struct Chat {
 #[component]
 pub fn Sidebar() -> impl IntoView {
     // TODO - should come from db or api call
-    let (chats, set_chats) =  signal(vec![
+    let (chats, _set_chats) =  signal(vec![
         Chat { id: 1, name: "Chat 1".to_string() },
         Chat { id: 2, name: "Chat 2".to_string() },
         Chat { id: 3, name: "Chat 3".to_string() },
@@ -26,11 +26,24 @@ pub fn Sidebar() -> impl IntoView {
         Chat { id: 1, name: "Chat 1".to_string() },
         Chat { id: 2, name: "Chat 2".to_string() },
         Chat { id: 3, name: "Chat 3".to_string() },
-        Chat { id: 3, name: "Chat 3".to_string() }
+        Chat { id: 3, name: "Chat 3".to_string() },
+        Chat { id: 1, name: "Chat 1".to_string() },
+        Chat { id: 2, name: "Chat 2".to_string() },
+        Chat { id: 3, name: "Chat 3".to_string() },
+        Chat { id: 1, name: "Chat 1".to_string() },
+        Chat { id: 2, name: "Chat 2".to_string() },
+        Chat { id: 3, name: "Chat 3".to_string() },
+        Chat { id: 1, name: "Chat 1".to_string() },
+        Chat { id: 2, name: "Chat 2".to_string() },
+        Chat { id: 3, name: "Chat 3".to_string() },
+        Chat { id: 3, name: "Chat 3".to_string() },
+        Chat { id: 1, name: "Chat 1".to_string() },
+        Chat { id: 2, name: "Chat 2".to_string() },
+        Chat { id: 3, name: "Chat 3".to_string() },
     ]);
 
     view! {
-        <div class="bg-base-200 h-full flex flex-col">
+        <div class="h-full flex flex-col">
             <div class="navbar justify-center">
                 <a href="https://hayride.ai" target="_blank" class="font-shrikhand btn btn-ghost text-2xl">"Hayride"</a>
             </div>
