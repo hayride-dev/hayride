@@ -94,7 +94,7 @@ pub fn Chat() -> impl IntoView {
           <div class="flex-grow w-full max-w-2xl pt-4">
               <ChatBubble messages=messages.into()/>
           </div>
-          <div class="w-full max-w-2xl sticky bottom-0 pb-4 bg-blue-700">
+          <div class="w-full max-w-2xl sticky bottom-0 pb-4">
               <ChatTextArea input=input set_input=set_input send=set_send_message />
           </div>
       </div>
