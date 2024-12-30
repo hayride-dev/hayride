@@ -14,7 +14,7 @@ pub fn Chat() -> impl IntoView {
         message,
         send,
         ..
-    } = use_websocket::<String, String, FromToStringCodec>("wss://echo.websocket.events/");
+    } = use_websocket::<String, String, FromToStringCodec>("ws://localhost:8081");
 
     let (input, set_input) = signal(String::new());
     let (messages, set_messages) = signal(Vec::<ChatMessage>::new());
