@@ -13,5 +13,8 @@ codee = { version = "0.2", features = [
 leptos = {version = "0.7.0", features = ["csr"]}
 leptos-use = "0.14.0"
 leptos_router = "0.7.0"
+reactive_stores = "0.1.2"
+serde = "1.0.217"
+serde_json = "1.0.134"
 wasm-bindgen = "0.2.99"
 wasm-bindgen-futures = "0.4.49"

@@ -4,8 +4,17 @@ use leptos_use::{
 use_websocket, UseWebSocketReturn,
 };
 use codee::string::FromToStringCodec;
+use serde::{Deserialize, Serialize};
+use reactive_stores::Store;
 
 use crate::components::chat::{ChatTextArea, ChatBubble, ChatMessage};
+use super::app::PromptOptions;
+
+#[derive(Serialize, Deserialize)]
+struct Prompt {
+    message: String,
+    options: PromptOptions,
+}
 
 #[component]
 pub fn Chat() -> impl IntoView {
@@ -55,19 +64,34 @@ pub fn Chat() -> impl IntoView {
       if sendmsg.get() {
       let msg = input.get();
         if !msg.is_empty() {
-            console::log_1(&"Sending message".into());
+          console::log_1(&"Sending message".into());
 
-            send(&msg.clone());
+          let options = expect_context::<Store<PromptOptions>>();
 
-            let message = ChatMessage {
-              sent: msg,
-              response: None,
-            };
+          let prompt = Prompt {
+            message: msg.clone(),
+            options:  options.get().clone(),
+          };
 
-            set_messages.update(|msgs| msgs.push(message));
-            set_input.set(String::new());
-            // set_history.update(|history: &mut Vec<_>| history.push(format!("[send]: {:?}", m)));
-            set_message_sent.set(true); // Update the message_sent state
+          let data = serde_json::to_string(&prompt);
+          match data {
+            Ok(d) => {
+              send(&d);
+            },
+            Err(e) => {
+              console::log_1(&format!("Error serializing prompt data: {:?}", e).into());
+            }
+          }
+
+          let message = ChatMessage {
+            sent: msg,
+            response: None,
+          };
+
+          set_messages.update(|msgs| msgs.push(message));
+          set_input.set(String::new());
+          // set_history.update(|history: &mut Vec<_>| history.push(format!("[send]: {:?}", m)));
+          set_message_sent.set(true); // Update the message_sent state
         }
           set_send_message.set(false);
         }
