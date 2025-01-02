@@ -10,15 +10,29 @@ pub struct ChatMessage {
 #[component]
 pub fn ChatTextArea(input: ReadSignal<String>, set_input: WriteSignal<String>, send: WriteSignal<bool>) -> impl IntoView {
 
-    let on_click = move |_| {
+    let on_click = move |_ev: leptos::ev::MouseEvent| {
         console::log_1(&"Received message".into());
         send.set(true);
     };
 
+    let on_keydown = move |ev: leptos::ev::KeyboardEvent| {
+        if ev.key() == "Enter" && !ev.shift_key() { // Check if Enter is pressed and Shift is not held
+            ev.prevent_default();
+            on_click(leptos::ev::MouseEvent::new("click").unwrap());
+        }
+    };
+
     view! {
         <div class="border-2 border-neutral-600 rounded-lg h-full w-full flex flex-col flex-grow">
-            <textarea class="textarea w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0" 
-            placeholder="Ask anything..." prop:value=input on:input=move |ev| set_input.set(event_target_value(&ev))>{input.get()}</textarea>
+            <textarea
+                class="textarea w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0" 
+                placeholder="Ask anything..."
+                prop:value=input
+                on:input=move |ev| set_input.set(event_target_value(&ev))
+                on:keydown=on_keydown
+            >
+                {input.get()}
+            </textarea>
             <div class="w-full flex justify-between p-2">
                 <button class="btn btn-ghost">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
