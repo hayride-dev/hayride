@@ -12,8 +12,27 @@ pub fn Config() -> impl IntoView {
     // Get system prompt from global state
     let system_prompt = prompt.system();
 
+    // Get the agent from global state
+    let agent = prompt.agent();
+
     view! {
         <div class="h-full flex flex-col mt-20">
+            <div class="dialog bg-base-100 shadow-md rounded-lg p-4">
+                <h1>Agent</h1>
+                <div class="mt-4">
+                    <input
+                        type="text"
+                        class="input w-full"
+                        placeholder="Example: 'tool_agent'"
+                        prop:value=agent.get()
+                        on:input=move |e| {
+                            if let Some(input) = e.target().and_then(|t| t.dyn_into::<leptos::web_sys::HtmlInputElement>().ok()) {
+                                agent.set(input.value());
+                            }
+                        }
+                    />
+                </div>
+            </div>
             <div class="dialog bg-base-100 shadow-md rounded-lg p-4">
                 <h1>System Prompt</h1>
                 <div class="mt-4">

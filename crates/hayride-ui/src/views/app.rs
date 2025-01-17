@@ -14,6 +14,7 @@ use crate::components::avatar::Avatar;
 pub struct Prompt {
     pub message: String,
     system: String,
+    agent: String,
     options: PromptOptions,
 }
 
@@ -41,6 +42,7 @@ pub fn App() -> impl IntoView {
     let mut prompt = Prompt::default();
 
     // Override some default options that are not yet available in the UI
+    prompt.agent ="tool_agent".to_string();
     prompt.options.num_batch = 4096;
     prompt.options.num_context = 4096;
     prompt.options.top_k = 20;
