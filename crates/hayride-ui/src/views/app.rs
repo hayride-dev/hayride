@@ -43,8 +43,8 @@ pub fn App() -> impl IntoView {
 
     // Override some default options that are not yet available in the UI
     prompt.agent ="tool_agent".to_string();
-    prompt.options.num_batch = 4096;
-    prompt.options.num_context = 4096;
+    prompt.options.num_batch = 20000;
+    prompt.options.num_context = 20000;
     prompt.options.top_k = 20;
     prompt.options.top_p = 0.9;
     provide_context(Store::new(prompt));
