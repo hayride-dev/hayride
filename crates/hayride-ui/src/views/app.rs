@@ -7,7 +7,16 @@ use serde::{Deserialize, Serialize};
 
 use super::chat::Chat;
 use crate::components::sidebar::Sidebar;
+use crate::components::config::Config;
 use crate::components::avatar::Avatar;
+
+#[derive(Clone, Serialize, Deserialize, Default, Store)]
+pub struct Prompt {
+    pub message: String,
+    system: String,
+    agent: String,
+    options: PromptOptions,
+}
 
 // Global State for prompt options
 #[derive(Clone, Serialize, Deserialize, Default, Store)]
@@ -29,13 +38,16 @@ extern "C" {
 
 #[component]
 pub fn App() -> impl IntoView {
+    // Set a global system prompt and options state
+    let mut prompt = Prompt::default();
+
     // Override some default options that are not yet available in the UI
-    let mut options = PromptOptions::default();
-    options.num_batch = 2048;
-    options.num_context = 2048;
-    options.top_k = 20;
-    options.top_p = 0.9;
-    provide_context(Store::new(options));
+    prompt.agent ="tool_agent".to_string();
+    prompt.options.num_batch = 20000;
+    prompt.options.num_context = 20000;
+    prompt.options.top_k = 20;
+    prompt.options.top_p = 0.9;
+    provide_context(Store::new(prompt));
 
     view! {
         <div class="flex h-screen w-screen">
@@ -44,6 +56,9 @@ pub fn App() -> impl IntoView {
         </div>
         <aside class="fixed top-0 left-0 h-full w-64 bg-base-200 rounded-r-xl">
             <Sidebar/>
+        </aside>
+        <aside class="fixed top-0 right-0 h-full w-64 bg-base-200 rounded-l-xl">
+            <Config/>
         </aside>
         <main id="content"  class="flex flex-col flex-1 ml-64 overflow-auto">
             <Router>

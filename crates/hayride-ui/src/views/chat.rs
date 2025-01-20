@@ -4,17 +4,10 @@ use leptos_use::{
 use_websocket, UseWebSocketReturn,
 };
 use codee::string::FromToStringCodec;
-use serde::{Deserialize, Serialize};
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatTextArea, ChatBubble, ChatMessage};
-use super::app::PromptOptions;
-
-#[derive(Serialize, Deserialize)]
-struct Prompt {
-    message: String,
-    options: PromptOptions,
-}
+use super::app::Prompt;
 
 #[component]
 pub fn Chat() -> impl IntoView {
@@ -66,12 +59,10 @@ pub fn Chat() -> impl IntoView {
         if !msg.is_empty() {
           console::log_1(&"Sending message".into());
 
-          let options = expect_context::<Store<PromptOptions>>();
+          let mut prompt = expect_context::<Store<Prompt>>().get().clone();
 
-          let prompt = Prompt {
-            message: msg.clone(),
-            options:  options.get().clone(),
-          };
+          // Set the prompt message
+          prompt.message = msg.clone();
 
           let data = serde_json::to_string(&prompt);
           match data {
