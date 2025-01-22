@@ -24,6 +24,7 @@ pub struct PromptOptions {
     temperature: f32,
     num_context: i32,
     num_batch: i32,
+    max_predict: i32,
     top_k: i32,
     top_p: f32,
     seed: u32,
@@ -45,6 +46,7 @@ pub fn App() -> impl IntoView {
     prompt.agent ="tool_agent".to_string();
     prompt.options.num_batch = 20000;
     prompt.options.num_context = 20000;
+    prompt.options.max_predict = 2000; // Limit the number of tokens the llm can generate
     prompt.options.top_k = 20;
     prompt.options.top_p = 0.9;
     provide_context(Store::new(prompt));
