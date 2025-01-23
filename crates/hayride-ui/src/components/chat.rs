@@ -61,7 +61,7 @@ pub fn ChatBubble(messages:Signal<Vec<ChatMessage>>) -> impl IntoView {
                         </div>
                     </div>
                     <div class="chat chat-start">
-                        <div class="chat-bubble chat-bubble-primary-content">
+                        <div class="chat-bubble chat-bubble-primary-content" style="white-space: pre-wrap;">
                             {msg.response.clone()} 
                         </div>
                     </div>
