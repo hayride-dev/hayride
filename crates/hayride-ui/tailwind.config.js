@@ -2,7 +2,29 @@
 module.exports = {
     content: ["*.html", "./src/**/*.rs",],
     daisyui: {
-      themes: ["retro"],
+      themes: ["retro",
+        {
+          custom: {
+          "primary": "#1e4b97",
+                    
+          "secondary": "#1b4388",
+                    
+          "accent": "#0c72ee",
+                    
+          "neutral": "#Fbfbfb",
+                    
+          "base-100": "#EDF1f7",
+                    
+          "info": "#2ec1ca",
+                    
+          "success": "#0c72ee",
+                    
+          "warning": "#F6BE49",
+                    
+          "error": "#BE202E",
+            },
+          },
+      ],
     },
     theme: {
       fontFamily: {

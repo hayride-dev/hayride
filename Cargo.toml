@@ -7,4 +7,4 @@ edition = "2021"
 
 
 [workspace]
-members = [ "crates/hayride-app","crates/hayride-ui"]
+members = [ "crates/hayride-app", "crates/hayride-pb","crates/hayride-ui"]

@@ -1,51 +1,119 @@
 use leptos::prelude::*;
 
+use chrono::{NaiveDate, Utc,Duration};
+
 #[derive(Clone)]
 struct Chat {
     id: usize,
     name: String,
+    date: NaiveDate,
+}
+
+fn group_chats(chats: Vec<Chat>) -> (Vec<Chat>, Vec<Chat>, Vec<Chat>) {
+    let today = Utc::now().date_naive();
+    let yesterday = today - Duration::days(1);
+    let last_7_days = today - Duration::days(7);
+
+    let mut yesterday_chats = Vec::new();
+    let mut last_7_days_chats = Vec::new();
+    let mut last_30_days_chats = Vec::new();
+
+    for chat in chats {
+        if chat.date == yesterday {
+            yesterday_chats.push(chat);
+        } else if chat.date > last_7_days {
+            last_7_days_chats.push(chat);
+        } else {
+            last_30_days_chats.push(chat);
+        }
+    }
+
+    (yesterday_chats, last_7_days_chats, last_30_days_chats)
 }
 
 #[component]
 pub fn Sidebar() -> impl IntoView {
     // TODO - should come from db or api call
-    let (chats, _set_chats) =  signal(vec![
-        Chat { id: 1, name: "Weekend Plans".to_string() },
-        Chat { id: 2, name: "Movie Night".to_string() },
-        Chat { id: 3, name: "Book Club".to_string() },
-        Chat { id: 4, name: "Travel Ideas".to_string() },
-        Chat { id: 5, name: "Cooking Recipes".to_string() },
-        Chat { id: 6, name: "Fitness Goals".to_string() },
-        Chat { id: 7, name: "Music Recommendations".to_string() },
-        Chat { id: 8, name: "Gaming Session".to_string() },
-        Chat { id: 9, name: "Pet Photos".to_string() },
-        Chat { id: 10, name: "Daily Chit-Chat".to_string() },
+    let (chats, _set_chats) = signal(vec![
+        Chat { id: 1, name: "Campaign Performance".to_string(), date: Utc::now().date_naive() },
+        Chat { id: 2, name: "Audience Targeting".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(1) },
+        Chat { id: 3, name: "Attribution Insights".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(3) },
+        Chat { id: 4, name: "Ad Spend Optimization".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(8) },
+        Chat { id: 5, name: "Fraud Prevention".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(15) },
+        Chat { id: 6, name: "Cross-Channel Strategy".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(20) },
+        Chat { id: 7, name: "ROAS Tracking".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(25) },
+        Chat { id: 8, name: "Real-Time Analytics".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(30) },
+        Chat { id: 9, name: "User Acquisition Trends".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(35) },
+        Chat { id: 10, name: "Kochava Integrations".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(40) },
+        Chat { id: 11, name: "CTV & OTT Advertising".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(45) },
+        Chat { id: 12, name: "App Store Optimization".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(50) },
+        Chat { id: 13, name: "Privacy-First Marketing".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(55) },
+        Chat { id: 14, name: "Customer Retention".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(60) },
+        Chat { id: 15, name: "Predictive Analytics".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(65) },
+        Chat { id: 16, name: "Programmatic Advertising".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(70) },
+        Chat { id: 17, name: "Geo-Targeted Campaigns".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(75) },
+        Chat { id: 18, name: "Lookalike Audiences".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(80) },
+        Chat { id: 19, name: "Incrementality Testing".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(85) },
+        Chat { id: 20, name: "DSP & SSP Strategies".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(90) },
+        Chat { id: 21, name: "Creative Optimization".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(95) },
+        Chat { id: 22, name: "Data Clean Rooms".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(100) },
+        Chat { id: 23, name: "Consent Management".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(105) },
+        Chat { id: 24, name: "Media Mix Modeling".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(110) },
+        Chat { id: 25, name: "Mobile Web vs. App".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(115) },
+        Chat { id: 26, name: "Ad Viewability Metrics".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(120) },
+        Chat { id: 27, name: "Engagement Benchmarks".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(125) },
+        Chat { id: 28, name: "Affiliate Marketing".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(130) },
+        Chat { id: 29, name: "Cost Per Action (CPA)".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(135) },
+        Chat { id: 30, name: "Ad Fraud Alerts".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(140) },
     ]);
+
+    let (yesterday_chats, last_7_days_chats, last_30_days_chats) = group_chats(chats.get());
 
     view! {
         <div class="h-full flex flex-col">
-            <div class="navbar justify-center">
-                <a href="https://hayride.ai" target="_blank" class="font-shrikhand btn btn-ghost text-2xl">"Hayride"</a>
-            </div>
+        <div class="navbar justify-center">
+            <a href="https://hayride.ai" target="_blank" class="btn btn-ghost">
+            <img src="public/logo-blue.svg" alt="Hayride Logo" class=" w-40" />
+            </a>
+        </div>
             <SideBarTopButtons/>
             <div class="flex-grow overflow-y-auto max-h-[calc(100vh-11rem)]">
-                <ul class="menu text-base-content p-4">
-                    <For
-                        each=move || chats.get()
-                        key=|state| state.id.clone()
-                        let:child
-                    >
-                        <li class="relative group hover:bg-base-400 group-hover:bg-base-400">
-                            <a>{child.name}</a>
-                            <button class="absolute right-0 top-1/2 transform -translate-y-1/2 hidden p-1 group-hover:inline-block group-hover:bg-base-400 hover:bg-base-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-current">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                </svg>
-                            </button>
-                        </li>
-                    </For>
-                </ul>
-            </div>
+            <ul class="menu text-base-content p-4">
+                <li class="menu-title text-xs text-base-content"><span>"Yesterday"</span></li>
+                <For each=move || yesterday_chats.clone() key=|state| state.id.clone() let:child>
+                    <li class="relative group hover:bg-base-400 group-hover:bg-base-400">
+                        <a>{child.name}</a>
+                        <button class="absolute right-0 top-1/2 transform -translate-y-1/2 hidden p-1 group-hover:inline-block group-hover:bg-base-400 hover:bg-base-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-current">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                        </button>
+                    </li>
+                </For>
+                <li class="menu-title text-xs text-base-content"><span>"Previous 7 Days"</span></li>
+                <For each=move || last_7_days_chats.clone() key=|state| state.id.clone() let:child>
+                    <li class="relative group hover:bg-base-400 group-hover:bg-base-400">
+                        <a>{child.name}</a>
+                        <button class="absolute right-0 top-1/2 transform -translate-y-1/2 hidden p-1 group-hover:inline-block group-hover:bg-base-400 hover:bg-base-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-current">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                        </button>
+                    </li>
+                </For>
+                <li class="menu-title text-xs text-base-content"><span>"Previous 30 Days"</span></li>
+                <For each=move || last_30_days_chats.clone() key=|state| state.id.clone() let:child>
+                    <li class="relative group hover:bg-base-400 group-hover:bg-base-400">
+                        <a>{child.name}</a>
+                        <button class="absolute right-0 top-1/2 transform -translate-y-1/2 hidden p-1 group-hover:inline-block group-hover:bg-base-400 hover:bg-base-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-current">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                        </button>
+                    </li>
+                </For>
+            </ul>
+        </div>
         <SideBarBottomButtons/>
       </div>
     }
@@ -61,16 +129,16 @@ fn SideBarTopButtons() -> impl IntoView {
                 </svg>
             </button>
             <div class="flex justify-end">
-            <button class="btn btn-ghost text-info">
+                <button class="btn btn-ghost text-accent">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                </button>
+                <button class="btn btn-ghost text-info">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
-            </button>
-            <button class="btn btn-ghost text-accent">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                </svg>
-            </button>
+                </button>
             </div>
         </div>
     }
@@ -79,7 +147,7 @@ fn SideBarTopButtons() -> impl IntoView {
 #[component]
 fn SideBarBottomButtons() -> impl IntoView {
     view!{
-        <div class="bg-base-200 flex flex-wrap w-full absolute bottom-4 justify-evenly">
+        <div class="flex flex-wrap w-full absolute bottom-4 justify-evenly">
         <label class="swap swap-rotate">
             <input type="checkbox" />
             <svg
