@@ -23,9 +23,9 @@ pub fn ChatTextArea(input: ReadSignal<String>, set_input: WriteSignal<String>, s
     };
 
     view! {
-        <div class="border-2 rounded-lg h-full w-full flex flex-col flex-grow shadow-lg">
+        <div class="bg-base-100 rounded-lg h-full w-full flex flex-col flex-grow shadow-md">
             <textarea
-                class="textarea bg-neutral w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0" 
+                class="textarea bg-base-100 w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0" 
                 placeholder="Ask anything..."
                 prop:value=input
                 on:input=move |ev| set_input.set(event_target_value(&ev))
@@ -56,12 +56,12 @@ pub fn ChatBubble(messages:Signal<Vec<ChatMessage>>) -> impl IntoView {
             <p class="mt-3 text-gray-600 dark:text-neutral-400">
                 {move || messages.get().iter().map(|msg| view! {
                     <div class="chat chat-end">
-                        <div class="chat-bubble chat-bubble-secondary">
+                        <div class="chat-bubble chat-bubble-primary">
                             {msg.sent.clone()}
                         </div>
                     </div>
                     <div class="chat chat-start">
-                        <div class="chat-bubble chat-bubble-primary-content" style="white-space: pre-wrap;">
+                        <div class="chat-bubble chat-bubble-secondary" style="white-space: pre-wrap;">
                             {msg.response.clone()} 
                         </div>
                     </div>
