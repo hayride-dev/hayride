@@ -107,11 +107,13 @@ pub fn Chat() -> impl IntoView {
           </div>
              }
           >
-          <div class="flex flex-col min-h-screen h-full w-full items-center justify-between">
-            <div class="flex-grow w-full max-w-2xl pt-4">
-                <ChatBubble messages=messages.into()/>
+          <div class="flex flex-col min-h-screen h-full w-full items-center">
+              <div class="flex flex-col items-center flex-grow w-full mt-16 max-h-[calc(100vh-16rem)] overflow-y-auto">
+                <div class="flex max-w-2xl w-full">
+                    <ChatBubble messages=messages.into()/>
+                </div>
             </div>
-            <div class="w-full max-w-2xl sticky bottom-0 pb-4">
+            <div class="fixed w-full max-w-2xl bottom-10">
                 <ChatTextArea input=input set_input=set_input send=set_send_message />
             </div>
           </div>

@@ -16,7 +16,7 @@ pub fn Config() -> impl IntoView {
     let agent = prompt.agent();
 
     view! {
-        <div class="h-full flex flex-col mt-20">
+        <div class="flex flex-col">
             <div class="dialog bg-base-100 shadow-md rounded-lg p-4">
                 <h1>Agent</h1>
                 <div class="mt-4">
