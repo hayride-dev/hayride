@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
-use crate::views::app::{Prompt, PromptOptionsStoreFields, PromptStoreFields};
+use crate::stores::prompt::{Prompt, PromptOptionsStoreFields, PromptStoreFields};
 use reactive_stores::Store;
 
 #[component]
@@ -8,10 +8,8 @@ pub fn Config() -> impl IntoView {
     let prompt = expect_context::<Store<Prompt>>();
     // Get the temperature from the global state
     let temperature = prompt.options().temperature();
-
     // Get system prompt from global state
     let system_prompt = prompt.system();
-
     // Get the agent from global state
     let agent = prompt.agent();
 

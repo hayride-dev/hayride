@@ -7,7 +7,7 @@ use codee::string::FromToStringCodec;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatTextArea, ChatBubble, ChatMessage};
-use super::app::Prompt;
+use crate::stores::prompt::Prompt;
 
 #[component]
 pub fn Chat() -> impl IntoView {
@@ -96,7 +96,7 @@ pub fn Chat() -> impl IntoView {
               <div class="flex items-center justify-center min-h-screen">
               <div class="hero">
                   <div class="hero-content text-center">
-                      <div class="w-[40vw] h-[40vh] flex flex-col ">
+                      <div class="w-[40vw] h-[35vh] flex flex-grow flex-col ">
                           <h1 class="text-4xl text-base-400 font-bold py-2">"What can I help with?"</h1>
                           <div class="flex flex-col flex-grow p-4">
                             <ChatTextArea input=input set_input=set_input send=set_send_message />
