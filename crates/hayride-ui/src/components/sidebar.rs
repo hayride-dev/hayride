@@ -73,7 +73,7 @@ pub fn Sidebar() -> impl IntoView {
         <div class="h-full flex flex-col">
         <div class="navbar justify-center">
             <a href="https://hayride.ai" target="_blank" class="btn btn-ghost">
-            <img src="public/logo-blue.svg" alt="Hayride Logo" class=" w-40" />
+            <img src="public/hayride-blk-logo.png" alt="Hayride Logo" class=" w-40" />
             </a>
         </div>
             <SideBarTopButtons/>
