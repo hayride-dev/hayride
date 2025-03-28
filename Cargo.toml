@@ -5,6 +5,14 @@ edition = "2021"
 
 [dependencies]
 
-
 [workspace]
-members = [ "crates/hayride-app","crates/hayride-ui"]
+members = ["crates/hayride-ui"]
+
+[workspace.package]
+version = "0.0.1"
+authors = ["hayride-dev"]
+edition = "2021"
+
+[workspace.dependencies]
+
+[features]

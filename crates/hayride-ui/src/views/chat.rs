@@ -7,7 +7,7 @@ use codee::string::FromToStringCodec;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatTextArea, ChatBubble, ChatMessage};
-use super::app::Prompt;
+use crate::stores::prompt::Prompt;
 
 #[component]
 pub fn Chat() -> impl IntoView {
@@ -93,26 +93,30 @@ pub fn Chat() -> impl IntoView {
             when=move || { message_sent.get() }
             fallback= move || 
             view! { 
+              <div class="flex items-center justify-center min-h-screen">
               <div class="hero">
-                <div class="hero-content text-center">
-                  <div class="max-w-xl">
-                    <h1 class="text-4xl font-bold">"What can I help with?"</h1>
-                    <div class="py-6 h-80 overflow-y-auto flex flex-col flex-grow">
-                    <ChatTextArea input=input set_input=set_input send=set_send_message />
-                </div>
+                  <div class="hero-content text-center">
+                      <div class="w-[40vw] h-[35vh] flex flex-grow flex-col ">
+                          <h1 class="text-4xl text-base-400 font-bold py-2">"What can I help with?"</h1>
+                          <div class="flex flex-col flex-grow p-4">
+                            <ChatTextArea input=input set_input=set_input send=set_send_message />
+                          </div>                      
+                      </div>
                   </div>
-                </div>
               </div>
+          </div>
              }
           >
-          <div class="flex flex-col h-full w-full items-center justify-between">
-          <div class="flex-grow w-full max-w-2xl pt-4">
-              <ChatBubble messages=messages.into()/>
+          <div class="flex flex-col min-h-screen h-full w-full items-center">
+              <div class="flex flex-col items-center flex-grow w-full mt-16 max-h-[calc(100vh-16rem)] overflow-y-auto">
+                <div class="flex max-w-2xl w-full">
+                    <ChatBubble messages=messages.into()/>
+                </div>
+            </div>
+            <div class="fixed w-full max-w-2xl bottom-10">
+                <ChatTextArea input=input set_input=set_input send=set_send_message />
+            </div>
           </div>
-          <div class="w-full max-w-2xl sticky bottom-0 pb-4">
-              <ChatTextArea input=input set_input=set_input send=set_send_message />
-          </div>
-      </div>
           </Show>
     }
 }

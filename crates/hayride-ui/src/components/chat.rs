@@ -8,24 +8,28 @@ pub struct ChatMessage {
 }
 
 #[component]
-pub fn ChatTextArea(input: ReadSignal<String>, set_input: WriteSignal<String>, send: WriteSignal<bool>) -> impl IntoView {
-
+pub fn ChatTextArea(
+    input: ReadSignal<String>,
+    set_input: WriteSignal<String>,
+    send: WriteSignal<bool>,
+) -> impl IntoView {
     let on_click = move |_ev: leptos::ev::MouseEvent| {
         console::log_1(&"Received message".into());
         send.set(true);
     };
 
     let on_keydown = move |ev: leptos::ev::KeyboardEvent| {
-        if ev.key() == "Enter" && !ev.shift_key() { // Check if Enter is pressed and Shift is not held
+        if ev.key() == "Enter" && !ev.shift_key() {
+            // Check if Enter is pressed and Shift is not held
             ev.prevent_default();
             on_click(leptos::ev::MouseEvent::new("click").unwrap());
         }
     };
 
     view! {
-        <div class="border-2 border-neutral-600 rounded-lg h-full w-full flex flex-col flex-grow">
+        <div class="bg-base-100 rounded-lg h-full w-full flex flex-col flex-grow shadow-md">
             <textarea
-                class="textarea w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0" 
+                class="textarea bg-base-100 w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0"
                 placeholder="Ask anything..."
                 prop:value=input
                 on:input=move |ev| set_input.set(event_target_value(&ev))
@@ -50,23 +54,30 @@ pub fn ChatTextArea(input: ReadSignal<String>, set_input: WriteSignal<String>, s
 }
 
 #[component]
-pub fn ChatBubble(messages:Signal<Vec<ChatMessage>>) -> impl IntoView {
+pub fn ChatBubble(messages: Signal<Vec<ChatMessage>>) -> impl IntoView {
     view! {
         <div class="flex flex-col h-full w-full overflow-y-auto">
-            <p class="mt-3 text-gray-600 dark:text-neutral-400">
-                {move || messages.get().iter().map(|msg| view! {
-                    <div class="chat chat-end">
-                        <div class="chat-bubble chat-bubble-secondary">
-                            {msg.sent.clone()}
-                        </div>
+        <p class="text-gray-600">
+            {move || messages.get().iter().map(|msg| view! {
+                <div class="chat chat-end">
+                    <div class="chat-header">
+                        "Ethan Lewis"
                     </div>
-                    <div class="chat chat-start">
-                        <div class="chat-bubble chat-bubble-primary-content" style="white-space: pre-wrap;">
-                            {msg.response.clone()} 
-                        </div>
+                    <div class="chat-bubble chat-bubble-secondary" style="white-space: pre-wrap;">
+                        {msg.sent.clone()}
                     </div>
-                }).collect::<Vec<_>>()}
-            </p>
-        </div>
+                </div>
+                <div class="chat chat-start">
+                    <div class="chat-header">
+                        "Kochava AI Agent"
+                    </div>
+                    <div class="chat-bubble" style="white-space: pre-wrap;">
+                        <span class={if msg.response.is_none(){ "text-primary loading loading-dots loading-md" } else { "hidden" }}></span>
+                    {msg.response.clone()}
+                    </div>
+                </div>
+            }).collect::<Vec<_>>()}
+        </p>
+    </div>
     }
 }
