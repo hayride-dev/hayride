@@ -1,0 +1,7 @@
+package hayride:wac@0.0.37;
+
+interface wac {
+    use types.{error};
+    compose: func(path: string) -> result<list<u8>, error>;
+    plug: func(socket-path: string, plug-paths: list<string>) -> result<list<u8>, error>;
+}

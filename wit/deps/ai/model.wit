@@ -1,0 +1,29 @@
+package hayride:ai@0.0.37;
+
+interface model {
+    use types.{message};
+    use inference-stream.{graph-execution-context-stream};
+    use wasi:io/streams@0.2.0.{output-stream};
+
+    enum error-code {
+        context-encode,
+        message-decode,
+        compute-error,
+        unexpected-message-type,
+        format-error,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    resource model {
+        constructor(graph: graph-execution-context-stream);
+        push: func(messages: list<message>) -> result<_,error>;
+        compute: func(output: borrow<output-stream>) -> result<message,error>;
+    }
+}

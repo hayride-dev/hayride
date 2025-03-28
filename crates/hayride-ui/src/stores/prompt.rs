@@ -16,7 +16,7 @@ pub struct PromptOptions {
     pub num_context: i32,
     pub num_batch: i32,
     pub max_predict: i32,
-    pub  top_k: i32,
-    pub  top_p: f32,
-    pub  seed: u32,
+    pub top_k: i32,
+    pub top_p: f32,
+    pub seed: u32,
 }

@@ -1,0 +1,14 @@
+[package]
+name = "hayride-host-traits"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+wasmtime = { workspace = true }
+wasmtime-wasi = { workspace = true }

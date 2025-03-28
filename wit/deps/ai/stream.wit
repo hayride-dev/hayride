@@ -1,0 +1,59 @@
+package hayride:ai@0.0.37;
+
+// This interface defines a stream of tensors. The stream is a sequence of tensors.
+
+interface tensor-stream {
+    use wasi:nn/tensor@0.2.0-rc-2024-10-28.{tensor-data, tensor-dimensions, tensor-type};
+    use wasi:io/poll@0.2.0.{pollable};
+    use wasi:io/streams@0.2.0.{stream-error};
+    
+    resource tensor-stream {
+        constructor(dimensions: tensor-dimensions, ty: tensor-type, data: tensor-data);
+        // Describe the size of the tensor (e.g., 2x2x2x2 -> [2, 2, 2, 2]). To represent a tensor
+        // containing a single value, use `[1]` for the tensor dimensions.
+        dimensions: func() -> tensor-dimensions;
+
+        // Describe the type of element in the tensor (e.g., `f32`).
+        ty: func() -> tensor-type;
+
+            /// Read up to `len` bytes from the stream.
+        read: func(
+            /// The maximum number of bytes to read
+            len: u64
+        ) -> result<tensor-data, stream-error>;
+
+        subscribe: func() -> pollable;
+    }
+}
+
+interface inference-stream {
+    use wasi:nn/errors@0.2.0-rc-2024-10-28.{error};
+    use wasi:nn/tensor@0.2.0-rc-2024-10-28.{tensor};
+    use tensor-stream.{tensor-stream};
+    /// Identify a tensor by name; this is necessary to associate tensors to
+    /// graph inputs and outputs.
+    type named-tensor = tuple<string, tensor>;
+    type named-tensor-stream = tuple<string, tensor-stream>;
+    
+    resource graph-execution-context-stream {
+        /// Compute the inference on the given inputs.
+        compute: func(inputs: list<named-tensor>) -> result<named-tensor-stream, error>;
+    }
+}
+
+interface graph-stream {
+    use wasi:nn/errors@0.2.0-rc-2024-10-28.{error};
+    use wasi:nn/tensor@0.2.0-rc-2024-10-28.{tensor};
+    use inference-stream.{graph-execution-context-stream};
+
+    resource graph-stream {
+        init-execution-context-stream: func() -> result<graph-execution-context-stream, error>;
+    }
+
+    /// Load a `graph` by name.
+    ///
+    /// How the host expects the names to be passed and how it stores the graphs for retrieval via
+    /// this function is **implementation-specific**. This allows hosts to choose name schemes that
+    /// range from simple to complex (e.g., URLs?) and caching mechanisms of various kinds.
+    load-by-name: func(name: string) -> result<graph-stream, error>;
+}

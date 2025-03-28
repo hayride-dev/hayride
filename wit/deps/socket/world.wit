@@ -1,0 +1,11 @@
+package hayride:socket@0.0.37;
+
+interface websocket {
+    use wasi:io/streams@0.2.0.{output-stream};
+    use wasi:io/error@0.2.0.{error as io-error};
+    handle: func(text: string, out: output-stream);
+}
+
+world exports {
+    export websocket;
+}
