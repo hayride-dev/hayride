@@ -1,0 +1,64 @@
+package hayride:core@0.0.37;
+
+interface types {
+    record logging {
+        enabled: bool,
+        level: string,
+        file: string
+    }
+
+    record morphs {
+        server: server,
+        ai: ai
+    }
+
+    record http {
+        address: string
+    }
+
+    record websocket {
+        address: string
+    }
+
+    record server {
+        http: http
+    }
+
+    record ai {
+        websocket: websocket,
+        http: http,
+        llm: llm,
+    }
+
+    record llm {
+        model: string
+    }
+
+    record config {
+        version: string,
+        license: string,
+        logging: logging,
+        morphs: morphs,
+    }
+
+    enum error-code {
+        set-failed,
+        get-failed,
+        config-not-set,
+        unknown
+    }
+    
+    resource error {
+        /// Return the error code.
+        code: func() -> error-code;
+
+        /// Errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+}
+
+interface config {
+    use types.{config, error};
+    get: func() -> result<config, error>;
+    set: func(config: config) -> result<_, error>;
+}

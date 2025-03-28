@@ -1,0 +1,5 @@
+package hayride:core@0.0.37;
+
+world imports {
+    import config;
+}

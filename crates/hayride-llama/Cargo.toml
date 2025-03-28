@@ -1,0 +1,15 @@
+[package]
+name = "hayride-llama"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true }
+hayride-llama-rs-sys = { workspace = true }
+
+log = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+rand = { workspace = true }

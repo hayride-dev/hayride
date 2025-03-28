@@ -1,0 +1,18 @@
+[package]
+name = "hayride-wac"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true }
+
+anyhow = { workspace = true }
+indexmap = { workspace = true }
+log = { workspace = true }
+miette = { workspace = true }
+wac-graph = { workspace = true }
+wac-parser = { workspace = true }
+wac-resolver = { workspace = true }
+wac-types = { workspace = true }
+dirs.workspace = true

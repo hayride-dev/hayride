@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use chrono::{NaiveDate, Utc,Duration};
+use chrono::{Duration, NaiveDate, Utc};
 
 #[derive(Clone)]
 struct Chat {
@@ -35,36 +35,156 @@ fn group_chats(chats: Vec<Chat>) -> (Vec<Chat>, Vec<Chat>, Vec<Chat>) {
 pub fn Sidebar() -> impl IntoView {
     // TODO - should come from db or api call
     let (chats, _set_chats) = signal(vec![
-        Chat { id: 1, name: "Campaign Performance".to_string(), date: Utc::now().date_naive() },
-        Chat { id: 2, name: "Audience Targeting".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(1) },
-        Chat { id: 3, name: "Attribution Insights".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(3) },
-        Chat { id: 4, name: "Ad Spend Optimization".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(8) },
-        Chat { id: 5, name: "Fraud Prevention".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(15) },
-        Chat { id: 6, name: "Cross-Channel Strategy".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(20) },
-        Chat { id: 7, name: "ROAS Tracking".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(25) },
-        Chat { id: 8, name: "Real-Time Analytics".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(30) },
-        Chat { id: 9, name: "User Acquisition Trends".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(35) },
-        Chat { id: 10, name: "Kochava Integrations".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(40) },
-        Chat { id: 11, name: "CTV & OTT Advertising".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(45) },
-        Chat { id: 12, name: "App Store Optimization".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(50) },
-        Chat { id: 13, name: "Privacy-First Marketing".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(55) },
-        Chat { id: 14, name: "Customer Retention".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(60) },
-        Chat { id: 15, name: "Predictive Analytics".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(65) },
-        Chat { id: 16, name: "Programmatic Advertising".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(70) },
-        Chat { id: 17, name: "Geo-Targeted Campaigns".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(75) },
-        Chat { id: 18, name: "Lookalike Audiences".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(80) },
-        Chat { id: 19, name: "Incrementality Testing".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(85) },
-        Chat { id: 20, name: "DSP & SSP Strategies".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(90) },
-        Chat { id: 21, name: "Creative Optimization".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(95) },
-        Chat { id: 22, name: "Data Clean Rooms".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(100) },
-        Chat { id: 23, name: "Consent Management".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(105) },
-        Chat { id: 24, name: "Media Mix Modeling".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(110) },
-        Chat { id: 25, name: "Mobile Web vs. App".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(115) },
-        Chat { id: 26, name: "Ad Viewability Metrics".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(120) },
-        Chat { id: 27, name: "Engagement Benchmarks".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(125) },
-        Chat { id: 28, name: "Affiliate Marketing".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(130) },
-        Chat { id: 29, name: "Cost Per Action (CPA)".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(135) },
-        Chat { id: 30, name: "Ad Fraud Alerts".to_string(), date: Utc::now().date_naive() - chrono::Duration::days(140) },
+        Chat {
+            id: 1,
+            name: "Campaign Performance".to_string(),
+            date: Utc::now().date_naive(),
+        },
+        Chat {
+            id: 2,
+            name: "Audience Targeting".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(1),
+        },
+        Chat {
+            id: 3,
+            name: "Attribution Insights".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(3),
+        },
+        Chat {
+            id: 4,
+            name: "Ad Spend Optimization".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(8),
+        },
+        Chat {
+            id: 5,
+            name: "Fraud Prevention".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(15),
+        },
+        Chat {
+            id: 6,
+            name: "Cross-Channel Strategy".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(20),
+        },
+        Chat {
+            id: 7,
+            name: "ROAS Tracking".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(25),
+        },
+        Chat {
+            id: 8,
+            name: "Real-Time Analytics".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(30),
+        },
+        Chat {
+            id: 9,
+            name: "User Acquisition Trends".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(35),
+        },
+        Chat {
+            id: 10,
+            name: "Kochava Integrations".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(40),
+        },
+        Chat {
+            id: 11,
+            name: "CTV & OTT Advertising".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(45),
+        },
+        Chat {
+            id: 12,
+            name: "App Store Optimization".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(50),
+        },
+        Chat {
+            id: 13,
+            name: "Privacy-First Marketing".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(55),
+        },
+        Chat {
+            id: 14,
+            name: "Customer Retention".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(60),
+        },
+        Chat {
+            id: 15,
+            name: "Predictive Analytics".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(65),
+        },
+        Chat {
+            id: 16,
+            name: "Programmatic Advertising".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(70),
+        },
+        Chat {
+            id: 17,
+            name: "Geo-Targeted Campaigns".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(75),
+        },
+        Chat {
+            id: 18,
+            name: "Lookalike Audiences".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(80),
+        },
+        Chat {
+            id: 19,
+            name: "Incrementality Testing".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(85),
+        },
+        Chat {
+            id: 20,
+            name: "DSP & SSP Strategies".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(90),
+        },
+        Chat {
+            id: 21,
+            name: "Creative Optimization".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(95),
+        },
+        Chat {
+            id: 22,
+            name: "Data Clean Rooms".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(100),
+        },
+        Chat {
+            id: 23,
+            name: "Consent Management".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(105),
+        },
+        Chat {
+            id: 24,
+            name: "Media Mix Modeling".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(110),
+        },
+        Chat {
+            id: 25,
+            name: "Mobile Web vs. App".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(115),
+        },
+        Chat {
+            id: 26,
+            name: "Ad Viewability Metrics".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(120),
+        },
+        Chat {
+            id: 27,
+            name: "Engagement Benchmarks".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(125),
+        },
+        Chat {
+            id: 28,
+            name: "Affiliate Marketing".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(130),
+        },
+        Chat {
+            id: 29,
+            name: "Cost Per Action (CPA)".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(135),
+        },
+        Chat {
+            id: 30,
+            name: "Ad Fraud Alerts".to_string(),
+            date: Utc::now().date_naive() - chrono::Duration::days(140),
+        },
     ]);
 
     let (yesterday_chats, last_7_days_chats, last_30_days_chats) = group_chats(chats.get());
@@ -121,7 +241,7 @@ pub fn Sidebar() -> impl IntoView {
 
 #[component]
 fn SideBarTopButtons() -> impl IntoView {
-    view!{
+    view! {
         <div class="flex flex-wrap justify-between">
             <button class="btn btn-ghost justify-start text-info">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
@@ -146,7 +266,7 @@ fn SideBarTopButtons() -> impl IntoView {
 
 #[component]
 fn SideBarBottomButtons() -> impl IntoView {
-    view!{
+    view! {
         <div class="flex flex-wrap w-full absolute bottom-4 justify-evenly">
         <label class="swap swap-rotate">
             <input type="checkbox" />

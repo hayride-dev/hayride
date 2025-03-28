@@ -1,24 +1,20 @@
 [package]
 name = "hayride-ui"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-chrono = "0.4.39"
-codee = { version = "0.2", features = [
-    "json_serde",
-    "msgpack_serde",
-    "base64",
-    "prost",
-] }
-leptos = {version = "0.7.0", features = ["csr"]}
-leptos-use = "0.14.0"
-leptos_router = "0.7.0"
-reactive_stores = "0.1.2"
-serde = "1.0.217"
-serde_json = "1.0.134"
-wasm-bindgen = "0.2.99"
-wasm-bindgen-futures = "0.4.49"
+chrono = { workspace = true }
+codee = { workspace = true }
+leptos = { workspace = true }
+leptos-use = { workspace = true }
+leptos_router = { workspace = true }
+reactive_stores = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+wasm-bindgen = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
 
 [package.metadata.leptos]
 assets-dir = "public"

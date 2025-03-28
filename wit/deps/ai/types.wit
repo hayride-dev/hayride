@@ -1,0 +1,50 @@
+package hayride:ai@0.0.37;
+
+interface types {
+    enum role {
+        user,
+        assistant,
+        system,
+        tool,
+        unknown
+    }
+
+    record text-content {
+        text: string, 
+        content-type: string
+    }
+
+    record tool-schema {
+        id: string,
+        name: string,
+        description: string,
+        params-schema: string
+    }
+    
+    record tool-input {
+        content-type: string,
+        id: string,
+        name: string,
+        input: string
+    }
+
+    record tool-output {
+        content-type: string,
+        id: string,
+        name: string,
+        output: string
+    }
+    
+    variant content {
+        none,
+        text(text-content),
+        tool-schema(tool-schema),
+        tool-input(tool-input),
+        tool-output(tool-output)
+    }
+
+    record message {
+        role: role,
+        content: list<content>
+    }
+}

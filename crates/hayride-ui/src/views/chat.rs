@@ -1,12 +1,10 @@
+use codee::string::FromToStringCodec;
 use leptos::prelude::*;
 use leptos::web_sys::console;
-use leptos_use::{
-use_websocket, UseWebSocketReturn,
-};
-use codee::string::FromToStringCodec;
+use leptos_use::{use_websocket, UseWebSocketReturn};
 use reactive_stores::Store;
 
-use crate::components::chat::{ChatTextArea, ChatBubble, ChatMessage};
+use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
 use crate::stores::prompt::Prompt;
 
 #[component]
@@ -27,21 +25,21 @@ pub fn Chat() -> impl IntoView {
         if let Some(msg) = message.get() {
             console::log_1(&"Received message".into());
             set_messages.update(|msgs| {
-              if let Some(last_message) = msgs.last_mut() {
-                match &last_message.response {
-                  Some(m) => {
-                    // Append to previous response
-                    last_message.response = Some(format!("{}{}", m, msg));
-                  },
-                  None => {
-                    // Set response if not already set
-                    last_message.response = Some(msg);
-                  }
+                if let Some(last_message) = msgs.last_mut() {
+                    match &last_message.response {
+                        Some(m) => {
+                            // Append to previous response
+                            last_message.response = Some(format!("{}{}", m, msg));
+                        }
+                        None => {
+                            // Set response if not already set
+                            last_message.response = Some(msg);
+                        }
+                    }
+                } else {
+                    console::log_1(&"No Sent Message Yet".into());
                 }
-              } else {
-                console::log_1(&"No Sent Message Yet".into());
-              }
-          });
+            });
         }
     });
 
@@ -54,45 +52,45 @@ pub fn Chat() -> impl IntoView {
     });
 
     Effect::new(move |_| {
-      if sendmsg.get() {
-      let msg = input.get();
-        if !msg.is_empty() {
-          console::log_1(&"Sending message".into());
+        if sendmsg.get() {
+            let msg = input.get();
+            if !msg.is_empty() {
+                console::log_1(&"Sending message".into());
 
-          let mut prompt = expect_context::<Store<Prompt>>().get().clone();
+                let mut prompt = expect_context::<Store<Prompt>>().get().clone();
 
-          // Set the prompt message
-          prompt.message = msg.clone();
+                // Set the prompt message
+                prompt.message = msg.clone();
 
-          let data = serde_json::to_string(&prompt);
-          match data {
-            Ok(d) => {
-              send(&d);
-            },
-            Err(e) => {
-              console::log_1(&format!("Error serializing prompt data: {:?}", e).into());
+                let data = serde_json::to_string(&prompt);
+                match data {
+                    Ok(d) => {
+                        send(&d);
+                    }
+                    Err(e) => {
+                        console::log_1(&format!("Error serializing prompt data: {:?}", e).into());
+                    }
+                }
+
+                let message = ChatMessage {
+                    sent: msg,
+                    response: None,
+                };
+
+                set_messages.update(|msgs| msgs.push(message));
+                set_input.set(String::new());
+                // set_history.update(|history: &mut Vec<_>| history.push(format!("[send]: {:?}", m)));
+                set_message_sent.set(true); // Update the message_sent state
             }
-          }
-
-          let message = ChatMessage {
-            sent: msg,
-            response: None,
-          };
-
-          set_messages.update(|msgs| msgs.push(message));
-          set_input.set(String::new());
-          // set_history.update(|history: &mut Vec<_>| history.push(format!("[send]: {:?}", m)));
-          set_message_sent.set(true); // Update the message_sent state
-        }
-          set_send_message.set(false);
+            set_send_message.set(false);
         }
     });
 
     view! {
           <Show
             when=move || { message_sent.get() }
-            fallback= move || 
-            view! { 
+            fallback= move ||
+            view! {
               <div class="flex items-center justify-center min-h-screen">
               <div class="hero">
                   <div class="hero-content text-center">
@@ -100,7 +98,7 @@ pub fn Chat() -> impl IntoView {
                           <h1 class="text-4xl text-base-400 font-bold py-2">"What can I help with?"</h1>
                           <div class="flex flex-col flex-grow p-4">
                             <ChatTextArea input=input set_input=set_input send=set_send_message />
-                          </div>                      
+                          </div>
                       </div>
                   </div>
               </div>

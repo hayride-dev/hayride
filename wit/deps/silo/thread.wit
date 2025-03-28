@@ -1,0 +1,10 @@
+package hayride:silo@0.0.37;
+
+interface threads {
+    /// system error numbers
+    type err-no = u32;
+
+    spawn: func(path: string, function: string, args: list<string>) -> result<string, err-no>;
+    wait: func(thread-id: string) -> result<list<u8>, err-no>;
+    kill: func(thread-id: string) -> result<_, err-no>;
+}

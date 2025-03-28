@@ -1,0 +1,15 @@
+[package]
+name = "hayride-lancedb"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true }
+
+arrow-array = { workspace = true }
+arrow-schema = { workspace = true }
+futures = { workspace = true }
+log ={ workspace = true }
+tokio = { workspace = true, features = ["full"] }
+lancedb = { workspace = true, features = ["sentence-transformers"] }

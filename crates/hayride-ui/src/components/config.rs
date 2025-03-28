@@ -1,7 +1,7 @@
-use leptos::prelude::*;
-use wasm_bindgen::JsCast;
 use crate::stores::prompt::{Prompt, PromptOptionsStoreFields, PromptStoreFields};
+use leptos::prelude::*;
 use reactive_stores::Store;
+use wasm_bindgen::JsCast;
 
 #[component]
 pub fn Config() -> impl IntoView {
@@ -35,7 +35,7 @@ pub fn Config() -> impl IntoView {
                 <h1>System Prompt</h1>
                 <div class="mt-4">
                     <textarea
-                        class="textarea w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0" 
+                        class="textarea w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0"
                         placeholder="Example: 'Only answer in rhymes'"
                         prop:value=system_prompt.get()
                         on:input=move |e| {
@@ -48,11 +48,11 @@ pub fn Config() -> impl IntoView {
             </div>
             <div class="dialog bg-base-100 shadow-md rounded-lg p-4">
                 <div class="mt-4">
-                    <input 
-                        type="range" 
+                    <input
+                        type="range"
                         step="0.01"
-                        min="0.0" 
-                        max="1.0" 
+                        min="0.0"
+                        max="1.0"
                         value=move || temperature.get()
                         on:input=move |e| {
                             if let Some(input) = e.target().and_then(|t| t.dyn_into::<leptos::web_sys::HtmlInputElement>().ok()) {

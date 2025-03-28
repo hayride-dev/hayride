@@ -1,0 +1,18 @@
+package hayride:ai@0.0.37;
+
+world imports {
+    include wasi:nn/ml@0.2.0-rc-2024-10-28;
+    // hayride streaming extension
+    import tensor-stream;
+    import inference-stream;
+    import graph-stream;
+
+    import agent;
+    import model;
+    import rag;
+}
+
+world exports {
+    export agent;
+    export model;
+}

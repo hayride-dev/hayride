@@ -1,12 +1,30 @@
 [package]
 name = "hayride"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
+hayride-core = { workspace = true }
+hayride-runtime = { workspace = true }
+hayride-utils = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+dirs = { workspace = true }
+wasmtime = { workspace = true }
 
 [workspace]
-members = ["crates/hayride-ui"]
+resolver = '2'
+members = [
+    "crates/hayride-utils",
+    "crates/hayride-runtime",
+    "crates/hayride-lancedb",
+    "crates/hayride-host-traits",
+    "crates/hayride-llama",
+    "crates/hayride-core",
+    "crates/hayride-wac",
+    "crates/hayride-ui",
+]
 
 [workspace.package]
 version = "0.0.1"
@@ -14,5 +32,74 @@ authors = ["hayride-dev"]
 edition = "2021"
 
 [workspace.dependencies]
+hayride-core = { path = "crates/hayride-core" }
+hayride-utils = { path = "crates/hayride-utils" }
+hayride-runtime = { path = "crates/hayride-runtime" }
+hayride-host-traits = { path = "crates/hayride-host-traits" }
+hayride-lancedb = { path = "crates/hayride-lancedb" }
+hayride-llama = { path = "crates/hayride-llama" }
+hayride-wac = { path = "crates/hayride-wac" }
+
+hayride-llama-rs-sys = "0.0.1"
+
+anyhow = "1.0.91"
+async-trait = "0.1.86"
+bytes = "1.10.0"
+dashmap = "6.1.0"
+dirs = "6.0.0"
+env_logger = "0.11.6"
+futures = "0.3.31"
+http = "1.2.0"
+http-body-util = "0.1.2"
+hyper = "1.6.0"
+hyper-tungstenite = "0.17.0"
+hyper-util = "0.1.10"
+log = "0.4.25"
+log-reload = "0.1.2"
+nix = { version = "0.29.0", features = ["signal"] }
+rand = "0.9.0"
+semver = "1.0.23"
+serde = "1.0.217"
+serde_json = "1.0.138"
+tokio = { version = "1.43.0", features = ["full"] }
+tokio-util = { version = "0.7.13", features = ["compat"] }
+toml = "0.7"
+url = "2.5.4"
+uuid = { version = "1.14.0", features = ["v4"] }
+wasmtime = "29.0.1"
+wasmtime-wasi = "29.0.1"
+wasmtime-wasi-http = "29.0.1"
+wit-parser = "0.225.0"
+
+# lancedb deps
+arrow-array = "54.1"
+arrow-schema = "54.1"
+lancedb = { version = "0.18.2", features = ["sentence-transformers"] }
+
+# wac deps
+indexmap = "2.8.0"
+miette = "7.5.0"
+wac-graph = "0.6.1"
+wac-parser = "0.6.1"
+wac-resolver = "0.6.1"
+wac-types = "0.6.1"
+
+# ui deps
+chrono = "0.4.39"
+codee = { version = "0.2", features = [
+    "json_serde",
+    "msgpack_serde",
+    "base64",
+    "prost",
+] }
+leptos = {version = "0.7.0", features = ["csr"]}
+leptos-use = "0.14.0"
+leptos_router = "0.7.0"
+reactive_stores = "0.1.2"
+wasm-bindgen = "0.2.99"
+wasm-bindgen-futures = "0.4.49"
 
 [features]
+default = []
+lancedb = ["hayride-runtime/lancedb"]
+llamacpp = ["hayride-runtime/llamacpp"]
