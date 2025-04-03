@@ -1,31 +1,31 @@
 package hayride:broom@0.0.1;
 
 world hayride-server {
-    include hayride:wasip2/imports@0.0.38;
-    include hayride:http/client-server@0.0.38;
+    include hayride:wasip2/imports@0.0.39;
+    include hayride:http/client-server@0.0.39;
 }
 
 world hayride-cli {
-    include hayride:wasip2/imports@0.0.38;
-    include hayride:wasip2/exports@0.0.38;
+    include hayride:wasip2/imports@0.0.39;
+    include hayride:wasip2/exports@0.0.39;
 }
 
 world hayride-ws {
-    include hayride:socket/exports@0.0.38;
+    include hayride:socket/exports@0.0.39;
 }
 
 world hayride-ai {
-    include hayride:ai/imports@0.0.38;
+    include hayride:ai/imports@0.0.39;
 }
 
 world hayride-core {
-    include hayride:core/imports@0.0.38;
+    include hayride:core/imports@0.0.39;
 }
 
 world hayride-silo {
-    include hayride:silo/imports@0.0.38;
+    include hayride:silo/imports@0.0.39;
 }
 
 world hayride-wac {
-    include hayride:wac/imports@0.0.38;
+    include hayride:wac/imports@0.0.39;
 }

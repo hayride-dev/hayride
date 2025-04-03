@@ -120,17 +120,12 @@ async fn serve_websocket<B>(
 where
     B: Body<Data = Bytes, Error = hyper::Error> + Send + Sync + 'static,
 {
-    // Get the parts from the request
-    // TODO: Do we care about the initial body?
-    // let (parts, body) = req.into_parts();
-
     let websocket: WebSocketStream<hyper_util::rt::TokioIo<Upgraded>> = websocket.await?;
     let (write, read) = websocket.split();
     let out = WebsocketOutputPipe::new(write);
 
     let boxed_output: Box<dyn wasmtime_wasi::HostOutputStream> = Box::new(out.clone());
     let output_arg = store.data_mut().table().push(boxed_output)?;
-
 
     let reader = WebSocketReader::new(read);
     let input = WebsocketInputPipe::new(reader);
