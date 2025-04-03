@@ -1,4 +1,4 @@
-package hayride:ai@0.0.37;
+package hayride:ai@0.0.39;
 
 interface agent {
     use wasi:io/streams@0.2.0.{output-stream};
@@ -15,5 +15,5 @@ interface agent {
         data: func() -> string;
     }
 
-    invoke: func(msg: message, output: output-stream) -> result<_,error>;
+    invoke: func(msg: message, output: borrow<output-stream>) -> result<_,error>;
 }

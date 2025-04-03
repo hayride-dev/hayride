@@ -11,13 +11,16 @@ use hyper_tungstenite::tungstenite::Utf8Bytes;
 use wasmtime_wasi::StreamError;
 use wasmtime_wasi_http::{body::HyperOutgoingBody, WasiHttpCtx, WasiHttpView};
 
-use bytes::Bytes;
 use hyper::body::Body;
 use hyper::upgrade::Upgraded;
 use hyper_tungstenite::WebSocketStream;
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
 use tungstenite::Message;
 use uuid::Uuid;
+use tokio::sync::mpsc;
+use tokio::io::{AsyncRead, ReadBuf};
+use std::{pin::Pin, task::{Context, Poll}};
+use bytes::{Bytes, Buf};
 
 use crate::ai::AiCtx;
 use crate::core::CoreCtx;
@@ -26,7 +29,7 @@ use wasmtime::{component::ResourceTable, Result};
 
 // Trait extensions
 use futures::sink::SinkExt;
-use futures::stream::{SplitSink, StreamExt};
+use futures::stream::{SplitSink, SplitStream, Stream, StreamExt};
 use http_body_util::BodyExt;
 
 pub struct WebsocketServer {
@@ -117,56 +120,26 @@ async fn serve_websocket<B>(
 where
     B: Body<Data = Bytes, Error = hyper::Error> + Send + Sync + 'static,
 {
-    // Get the parts from the request
-    // TODO: Do we care about the initial body?
-    // let (parts, body) = req.into_parts();
-
     let websocket: WebSocketStream<hyper_util::rt::TokioIo<Upgraded>> = websocket.await?;
-    let (write, mut read) = websocket.split();
+    let (write, read) = websocket.split();
     let out = WebsocketOutputPipe::new(write);
 
-    while let Some(message) = read.next().await {
-        match message? {
-            Message::Text(msg) => {
-                let boxed: Box<dyn wasmtime_wasi::HostOutputStream> = Box::new(out.clone());
-                let arg = store.data_mut().table().push(boxed)?;
+    let boxed_output: Box<dyn wasmtime_wasi::HostOutputStream> = Box::new(out.clone());
+    let output_arg = store.data_mut().table().push(boxed_output)?;
 
-                if let Err(e) = server
-                    .hayride_socket_websocket()
-                    .call_handle(&mut store, &msg, arg)
-                    .await
-                {
-                    log::warn!("error handling websocket request: {:?}", e);
-                    continue;
-                }
-            }
-            Message::Binary(msg) => {
-                log::debug!("received binary message: {msg:02X?}");
-                // write.send(Message::binary(b"Thank you, come again.".to_vec())).await?;
-            }
-            Message::Ping(msg) => {
-                // No need to send a reply: tungstenite takes care of this for you.
-                log::debug!("received ping message: {msg:02X?}");
-            }
-            Message::Pong(msg) => {
-                log::debug!("received pong message: {msg:02X?}");
-            }
-            Message::Close(msg) => {
-                // No need to send a reply: tungstenite takes care of this for you.
-                if let Some(msg) = &msg {
-                    log::debug!(
-                        "received close message with code {} and message: {}",
-                        msg.code,
-                        msg.reason
-                    );
-                } else {
-                    log::debug!("received close message");
-                }
-            }
-            Message::Frame(_msg) => {
-                unreachable!();
-            }
-        }
+    let reader = WebSocketReader::new(read);
+    let input = WebsocketInputPipe::new(reader);
+
+    let boxed_input: Box<dyn wasmtime_wasi::HostInputStream> = Box::new(input);
+    let input_arg = store.data_mut().table().push(boxed_input)?;
+
+    if let Err(e) = server
+        .hayride_socket_websocket()
+        .call_handle(&mut store, input_arg, output_arg)
+        .await
+    {
+        log::warn!("error handling websocket request: {:?}", e);
+        return Err(e.into());
     }
 
     Ok(())
@@ -244,5 +217,162 @@ impl wasmtime_wasi::StdoutStream for WebsocketOutputPipe {
 
     fn isatty(&self) -> bool {
         false
+    }
+}
+
+#[derive(Debug)]
+pub struct WebsocketInputPipe {
+    closed: bool,
+    buffer: Option<Result<Bytes, StreamError>>,
+    receiver: mpsc::Receiver<Result<Bytes, StreamError>>,
+    _join_handle: Option<wasmtime_wasi::runtime::AbortOnDropJoinHandle<()>>,
+}
+
+impl WebsocketInputPipe {
+    pub fn new<T: tokio::io::AsyncRead + Send + Unpin + 'static>(
+        mut reader: T,
+    ) -> Self {
+        // let (sender, receiver) = mpsc::channel(2048);
+        let (sender, receiver) = mpsc::channel(2048);
+        let join_handle = wasmtime_wasi::runtime::spawn(async move {
+            loop {
+                use tokio::io::AsyncReadExt;
+                let mut buf = bytes::BytesMut::with_capacity(4096);
+                let sent = match reader.read_buf(&mut buf).await {
+                    Ok(nbytes) if nbytes == 0 => sender.send(Err(StreamError::Closed)).await,
+                    Ok(_) => sender.send(Ok(buf.freeze())).await,
+                    Err(e) => {
+                        sender
+                            .send(Err(StreamError::LastOperationFailed(e.into())))
+                            .await
+                    }
+                };
+                if sent.is_err() {
+                    // no more receiver - stop trying to read
+                    break;
+                }
+            }
+        });
+        Self {
+            closed: false,
+            buffer: None,
+            receiver,
+            _join_handle: Some(join_handle),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl wasmtime_wasi::HostInputStream for WebsocketInputPipe {
+    fn read(&mut self, size: usize) -> wasmtime_wasi::StreamResult<Bytes> {
+        use mpsc::error::TryRecvError;
+
+        match self.buffer.take() {
+            Some(Ok(mut bytes)) => {
+                let len = bytes.len().min(size);
+                let rest = bytes.split_off(len);
+                if !rest.is_empty() {
+                    self.buffer = Some(Ok(rest));
+                }
+                return Ok(bytes);
+            }
+            Some(Err(e)) => {
+                self.closed = true;
+                return Err(e);
+            }
+            None => {}
+        }
+
+        match self.receiver.try_recv() {
+            Ok(Ok(mut bytes)) => {
+                let len = bytes.len().min(size);
+                let rest = bytes.split_off(len);
+                if !rest.is_empty() {
+                    self.buffer = Some(Ok(rest));
+                }
+
+                Ok(bytes)
+            }
+            Ok(Err(e)) => {
+                self.closed = true;
+                Err(e)
+            }
+            Err(TryRecvError::Empty) => Ok(Bytes::new()),
+            Err(TryRecvError::Disconnected) => Err(StreamError::Trap(anyhow::anyhow!(
+                "AsyncReadStream sender died - should be impossible"
+            ))),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl wasmtime_wasi::Subscribe for WebsocketInputPipe {
+    async fn ready(&mut self) {
+        if self.buffer.is_some() || self.closed {
+            return;
+        }
+        match self.receiver.recv().await {
+            Some(res) => {
+                self.buffer = Some(res)
+            },
+            None => {
+                panic!("no more sender for an open AsyncReadStream - should be impossible")
+            }
+        }
+    }
+}
+
+pub struct WebSocketReader {
+    stream: SplitStream<WebSocketStream<hyper_util::rt::TokioIo<Upgraded>>>,
+    buffer: Bytes,
+}
+
+impl WebSocketReader {
+    pub fn new(stream: SplitStream<WebSocketStream<hyper_util::rt::TokioIo<Upgraded>>>) -> Self {
+        Self {
+            stream,
+            buffer: Bytes::new(),
+        }
+    }
+}
+
+impl AsyncRead for WebSocketReader {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        // If we have leftover data in buffer, copy that first
+        if self.buffer.has_remaining() {
+            let to_copy = std::cmp::min(self.buffer.len(), buf.remaining());
+            let bytes = self.buffer.split_to(to_copy);
+            buf.put_slice(&bytes);
+            return Poll::Ready(Ok(()));
+        }
+
+        // Otherwise, poll the stream for the next message
+        match Pin::new(&mut self.stream).poll_next(cx) {
+            Poll::Ready(Some(Ok(Message::Binary(data)))) => {
+                self.buffer = data;
+                self.poll_read(cx, buf)
+            }
+            Poll::Ready(Some(Ok(Message::Text(text)))) => {
+                let bytes = Bytes::copy_from_slice(text.as_bytes());
+                self.buffer = bytes;
+                self.poll_read(cx, buf)
+            }
+            Poll::Ready(Some(Ok(Message::Ping(_) | Message::Pong(_) | Message::Frame(_)))) => {
+                // Skip control frames and keep polling
+                self.poll_read(cx, buf)
+            }
+            Poll::Ready(Some(Ok(Message::Close(_)))) | Poll::Ready(None) => {
+                // End of stream
+                Poll::Ready(Ok(()))
+            }
+            Poll::Ready(Some(Err(e))) => {
+                Poll::Ready(Err(std::io::Error::new(std::io::ErrorKind::Other, e)))
+            }
+            Poll::Pending => Poll::Pending,
+        }
     }
 }
