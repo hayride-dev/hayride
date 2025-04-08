@@ -1,16 +1,14 @@
-package hayride:ai@0.0.39;
+package hayride:ai@0.0.41;
 
 interface model {
-    use types.{message};
     use inference-stream.{graph-execution-context-stream};
-    use wasi:io/streams@0.2.0.{output-stream};
+    use types.{message};
 
     enum error-code {
+        context-error,
         context-encode,
-        message-decode,
+        context-decode,
         compute-error,
-        unexpected-message-type,
-        format-error,
         unknown
     }
 
@@ -21,9 +19,14 @@ interface model {
         data: func() -> string;
     }
 
+    resource format {
+        constructor();
+        encode: func(messages: list<message>) -> result<list<u8>,error>;
+        decode: func(raw: list<u8>) -> result<message, error>;
+    }
+
     resource model {
-        constructor(graph: graph-execution-context-stream);
-        push: func(messages: list<message>) -> result<_,error>;
-        compute: func(output: borrow<output-stream>) -> result<message,error>;
+        constructor(format: format, graph: graph-execution-context-stream);
+        compute: func(messages: list<message>) -> result<message,error>;
     }
 }

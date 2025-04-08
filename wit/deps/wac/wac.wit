@@ -1,4 +1,4 @@
-package hayride:wac@0.0.39;
+package hayride:wac@0.0.41;
 
 interface wac {
     use types.{error};

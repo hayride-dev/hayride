@@ -1,0 +1,36 @@
+package hayride:ai@0.0.41;
+
+interface context {
+    use types.{message};
+
+    enum error-code {
+        unexpected-message-type,
+        push-error,
+        message-not-found,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+
+    resource context {
+        constructor();
+        push: func(messages: list<message>) -> result<_, error>;
+        messages: func() -> result<list<message>, error>;
+        next: func() -> result<message, error>;
+
+        // TODO :: add more context mangement functions ( examples below )
+
+        // truncate can be used to summarize the full context 
+        // truncate: func() -> result<_, error>;
+
+        // clear can be used to clear the context
+        // clear: func() -> result<_, error>;
+    }
+} 
+
