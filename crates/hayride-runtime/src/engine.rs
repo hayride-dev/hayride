@@ -495,7 +495,27 @@ impl WasmtimeEngine {
                             address = addr.to_string();
                         } else {
                             // Otherwise, use config value
-                            let url = Url::parse(&c.morphs.server.http.address)?;
+
+                            // Check if imports include ai to determine which config to use
+                            let mut ai = false;
+                            wit_parsed.imports().iter().for_each(|i| {
+                                match i.name.namespace.as_str() {
+                                    "hayride" => match i.name.name.as_str() {
+                                        "ai" => {
+                                            ai = true;
+                                        }
+                                        _ => {}
+                                    },
+                                    _ => {}
+                                }
+                            });
+
+                            let url = if ai {
+                                Url::parse(&c.morphs.ai.http.address)?
+                            } else {
+                                Url::parse(&c.morphs.server.http.address)?
+                            };
+
                             let port = url.port_or_known_default().unwrap_or(80);
                             address = url.host_str().unwrap_or(&address).to_string()
                                 + ":"
