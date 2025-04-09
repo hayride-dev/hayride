@@ -1,4 +1,4 @@
-package hayride:http@0.0.39;
+package hayride:http@0.0.41;
 
 world client {
     import wasi:http/types@0.2.0;
