@@ -1,5 +1,4 @@
 use leptos::prelude::*;
-use leptos::web_sys::console;
 
 #[derive(Clone)]
 pub struct ChatMessage {
