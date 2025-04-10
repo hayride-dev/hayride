@@ -22,7 +22,7 @@ pub fn Config() -> impl IntoView {
                         type="text"
                         class="input w-full"
                         placeholder="Example: 'tool_agent'"
-                        prop:value=agent.get()
+                        prop:value={move || agent.get()}
                         on:input=move |e| {
                             if let Some(input) = e.target().and_then(|t| t.dyn_into::<leptos::web_sys::HtmlInputElement>().ok()) {
                                 agent.set(input.value());
@@ -37,7 +37,7 @@ pub fn Config() -> impl IntoView {
                     <textarea
                         class="textarea w-full flex-grow overflow-y-auto resize-none focus:outline-none focus:border-transparent focus:ring-0"
                         placeholder="Example: 'Only answer in rhymes'"
-                        prop:value=system_prompt.get()
+                        prop:value={move || system_prompt.get()}
                         on:input=move |e| {
                             if let Some(input) = e.target().and_then(|t| t.dyn_into::<leptos::web_sys::HtmlTextAreaElement>().ok()) {
                                 system_prompt.set(input.value());

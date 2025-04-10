@@ -187,7 +187,8 @@ pub fn Sidebar() -> impl IntoView {
         },
     ]);
 
-    let (yesterday_chats, last_7_days_chats, last_30_days_chats) = group_chats(chats.get());
+    let chats_value = chats.get_untracked();
+    let (yesterday_chats, last_7_days_chats, last_30_days_chats) = group_chats(chats_value);
 
     view! {
         <div class="h-full flex flex-col">

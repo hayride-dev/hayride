@@ -7,12 +7,13 @@ use crate::stores::prompt::Prompt;
 use wasm_bindgen_futures::spawn_local;
 
 async fn fetch_prompt(data: String) -> Result<String, Error> {
-    let response = reqwasm::http::Request::post("http://localhost:8081/v1/generate")
+    let response = reqwasm::http::Request::post("http://localhost:8082/v1/generate")
         .body(data)
         .send()
         .await?;
 
-    let prompt = response.json().await?;
+    // Getting response as a plain text, but could parse json here if needed
+    let prompt = response.text().await?;
     Ok(prompt)
 }
 

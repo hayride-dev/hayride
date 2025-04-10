@@ -14,7 +14,6 @@ pub fn ChatTextArea(
     send: WriteSignal<bool>,
 ) -> impl IntoView {
     let on_click = move |_ev: leptos::ev::MouseEvent| {
-        console::log_1(&"Received message".into());
         send.set(true);
     };
 
@@ -35,7 +34,7 @@ pub fn ChatTextArea(
                 on:input=move |ev| set_input.set(event_target_value(&ev))
                 on:keydown=on_keydown
             >
-                {input.get()}
+                {move || input.get()}
             </textarea>
             <div class="w-full flex justify-between p-2">
                 <button class="btn btn-ghost">
