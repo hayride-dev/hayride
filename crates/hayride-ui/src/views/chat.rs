@@ -1,86 +1,72 @@
-use codee::string::FromToStringCodec;
 use leptos::prelude::*;
 use leptos::web_sys::console;
-use leptos_use::{use_websocket, UseWebSocketReturn};
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
 use crate::stores::prompt::Prompt;
+use wasm_bindgen_futures::spawn_local;
+
+async fn fetch_prompt(data: String) -> Result<String, Error> {
+    let response = reqwasm::http::Request::post("http://localhost:8081/v1/generate")
+        .body(data)
+        .send()
+        .await?;
+
+    let prompt = response.json().await?;
+    Ok(prompt)
+}
 
 #[component]
 pub fn Chat() -> impl IntoView {
-    let UseWebSocketReturn {
-        ready_state,
-        message,
-        send,
-        ..
-    } = use_websocket::<String, String, FromToStringCodec>("ws://localhost:8081");
-
     let (input, set_input) = signal(String::new());
     let (messages, set_messages) = signal(Vec::<ChatMessage>::new());
     let (message_sent, set_message_sent) = signal(false);
     let (sendmsg, set_send_message) = signal(false);
-    // Update the messages signal when a new message is received
-    Effect::new(move |_| {
-        if let Some(msg) = message.get() {
-            console::log_1(&"Received message".into());
-            set_messages.update(|msgs| {
-                if let Some(last_message) = msgs.last_mut() {
-                    match &last_message.response {
-                        Some(m) => {
-                            // Append to previous response
-                            last_message.response = Some(format!("{}{}", m, msg));
-                        }
-                        None => {
-                            // Set response if not already set
-                            last_message.response = Some(msg);
-                        }
-                    }
-                } else {
-                    console::log_1(&"No Sent Message Yet".into());
-                }
-            });
-        }
-    });
 
-    Effect::new(move |_| {
-        console::log_1(&format!("Current message: {:?}", message.get()).into());
-    });
-
-    Effect::new(move |_| {
-        console::log_1(&format!("WebSocket Ready State: {:?}", ready_state.get()).into());
-    });
-
+    // When we get a message to send, spawn a task to fetch a prompt
     Effect::new(move |_| {
         if sendmsg.get() {
             let msg = input.get();
             if !msg.is_empty() {
-                console::log_1(&"Sending message".into());
+                // console::log_1(&"Sending message".into());
 
                 let mut prompt = expect_context::<Store<Prompt>>().get().clone();
-
                 // Set the prompt message
                 prompt.message = msg.clone();
 
-                let data = serde_json::to_string(&prompt);
-                match data {
+                match serde_json::to_string(&prompt) {
                     Ok(d) => {
-                        send(&d);
+                        // Spawn an async task
+                        let set_messages = set_messages.clone();
+                        let set_input = set_input.clone();
+                        let set_message_sent = set_message_sent.clone();
+
+                        spawn_local(async move {
+                            // Call the async fetch function
+                            match fetch_prompt(d.clone()).await {
+                                Ok(response_data) => {
+                                    // console::log_1(&format!("Response: {:?}", response_data).into());
+    
+                                    let message = ChatMessage {
+                                        sent: msg.clone(),
+                                        response: Some(response_data),
+                                    };
+    
+                                    set_messages.update(|msgs| msgs.push(message));
+                                    set_input.set(String::new());
+                                    set_message_sent.set(true);
+                                }
+                                Err(e) => {
+                                    console::log_1(&format!("Fetch error: {:?}", e).into());
+                                }
+                            }
+                        });
+
                     }
                     Err(e) => {
                         console::log_1(&format!("Error serializing prompt data: {:?}", e).into());
                     }
                 }
-
-                let message = ChatMessage {
-                    sent: msg,
-                    response: None,
-                };
-
-                set_messages.update(|msgs| msgs.push(message));
-                set_input.set(String::new());
-                // set_history.update(|history: &mut Vec<_>| history.push(format!("[send]: {:?}", m)));
-                set_message_sent.set(true); // Update the message_sent state
             }
             set_send_message.set(false);
         }

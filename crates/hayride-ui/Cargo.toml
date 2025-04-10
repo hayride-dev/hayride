@@ -6,11 +6,10 @@ edition.workspace = true
 
 [dependencies]
 chrono = { workspace = true }
-codee = { workspace = true }
 leptos = { workspace = true }
-leptos-use = { workspace = true }
 leptos_router = { workspace = true }
 reactive_stores = { workspace = true }
+reqwasm = { workspace = true}
 serde = { workspace = true }
 serde_json = { workspace = true }
 wasm-bindgen = { workspace = true }
