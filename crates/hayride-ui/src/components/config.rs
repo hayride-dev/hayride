@@ -9,7 +9,7 @@ pub fn Config() -> impl IntoView {
     // Get the temperature from the global state
     let temperature = prompt.options().temperature();
     // Get system prompt from global state
-    let system_prompt = prompt.system();
+    // let system_prompt = prompt.system();
     // Get the agent from global state
     let agent = prompt.agent();
 
@@ -31,6 +31,7 @@ pub fn Config() -> impl IntoView {
                     />
                 </div>
             </div>
+            /*
             <div class="dialog bg-base-100 shadow-md rounded-lg p-4">
                 <h1>System Prompt</h1>
                 <div class="mt-4">
@@ -46,6 +47,7 @@ pub fn Config() -> impl IntoView {
                     ></textarea>
                 </div>
             </div>
+            */
             <div class="dialog bg-base-100 shadow-md rounded-lg p-4">
                 <div class="mt-4">
                     <input

@@ -3,7 +3,7 @@ use leptos::web_sys::console;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
-use crate::stores::prompt::Prompt;
+use crate::stores::prompt::{Prompt, Message, Role};
 use wasm_bindgen_futures::spawn_local;
 
 async fn fetch_prompt(data: String) -> Result<String, Error> {
@@ -33,7 +33,11 @@ pub fn Chat() -> impl IntoView {
 
                 let mut prompt = expect_context::<Store<Prompt>>().get().clone();
                 // Set the prompt message
-                prompt.message = msg.clone();
+                let messages = Message {
+                    role: Role::User,
+                    content: vec![msg.clone()],
+                };
+                prompt.messages = vec![messages];
 
                 match serde_json::to_string(&prompt) {
                     Ok(d) => {
