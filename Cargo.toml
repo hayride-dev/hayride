@@ -86,16 +86,10 @@ wac-types = "0.6.1"
 
 # ui deps
 chrono = "0.4.39"
-codee = { version = "0.2", features = [
-    "json_serde",
-    "msgpack_serde",
-    "base64",
-    "prost",
-] }
 leptos = {version = "0.7.0", features = ["csr"]}
-leptos-use = "0.14.0"
 leptos_router = "0.7.0"
 reactive_stores = "0.1.2"
+reqwasm = "0.5.0"
 wasm-bindgen = "0.2.99"
 wasm-bindgen-futures = "0.4.49"
 
