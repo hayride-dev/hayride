@@ -110,8 +110,40 @@ jobs:
             cp "$file" "dist/${BIN}-${VERSION}-${target}.tar.xz"
           done
 
+      - name: Import core morphs for release
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+        run: |
+          TAG=${{ env.RELEASE_VERSION }}
+          SOURCE_REPO=hayride-dev/core-morphs
+          DEST_DIR=dist
+          FILES=("cli.wasm" "server.wasm" "ai-server.wasm" "ui.wasm")
+
+          echo "Fetching release assets from $SOURCE_REPO@$TAG..."
+
+          RELEASE_ASSETS=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            https://api.github.com/repos/$SOURCE_REPO/releases/tags/$TAG)
+
+          for FILENAME in "${FILES[@]}"; do
+            echo "Searching for $FILENAME..."
+
+            ASSET_ID=$(echo "$RELEASE_ASSETS" | jq ".assets[] | select(.name == \"$FILENAME\") | .id")
+
+            if [ -z "$ASSET_ID" ]; then
+              echo "⚠️ $FILENAME not found in $SOURCE_REPO@$TAG, skipping."
+              continue
+            fi
+
+            echo "Downloading $FILENAME..."
+            curl -sL \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/octet-stream" \
+              "https://api.github.com/repos/$SOURCE_REPO/releases/assets/$ASSET_ID" \
+              -o "$DEST_DIR/$FILENAME"
+          done
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.tar.xz
+          files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
