@@ -129,7 +129,7 @@ jobs:
 
             ASSET_ID=$(echo "$RELEASE_ASSETS" | jq ".assets[] | select(.name == \"$FILENAME\") | .id")
 
-            if [ -z "$ASSET_ID" ]; then
+            if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
               echo "⚠️ $FILENAME not found in $SOURCE_REPO@$TAG, skipping."
               continue
             fi
