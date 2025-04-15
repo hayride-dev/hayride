@@ -115,7 +115,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
         run: |
           TAG=${{ env.RELEASE_VERSION }}
-          SOURCE_REPO=hayride-dev/core-morphs
+          SOURCE_REPO=hayride-dev/core-morph
           DEST_DIR=dist
           FILES=("cli.wasm" "server.wasm" "ai-server.wasm" "ui.wasm")
 
