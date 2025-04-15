@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install cross
+        run: cargo install cross
+
+      - name: Build with cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          BIN=hayride
+          TARGET=${{ matrix.target }}
+
+          OUTFILE="${BIN}-${TARGET}"
+          cp target/$TARGET/release/$BIN $OUTFILE
+          chmod +x $OUTFILE
+
+          tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries-${{ matrix.target }}
+          path: dist/*.tar.xz
+
+  macos-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build native macOS binary
+        run: cargo build --release
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          BIN=hayride
+          TARGET=x86_64-apple-darwin
+          OUTFILE="${BIN}-${TARGET}"
+          cp target/release/$BIN $OUTFILE
+          chmod +x $OUTFILE
+          tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries-x86_64-apple-darwin
+          path: dist/*.tar.xz
+
+  release:
+    needs: [build, macos-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version from tag
+        id: get_version
+        run: echo "RELEASE_VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Create output dir
+        run: mkdir -p dist
+
+      # Download artifacts for each target
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries-x86_64-unknown-linux-gnu
+          path: temp/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries-aarch64-unknown-linux-gnu
+          path: temp/arm
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries-x86_64-apple-darwin
+          path: temp/macos
+
+      - name: Rename files to include version
+        run: |
+          BIN=hayride
+          VERSION=${{ env.RELEASE_VERSION }}
+
+          for file in $(find temp -name "*.tar.xz"); do
+            base=$(basename "$file")
+            target=$(echo "$base" | sed -E "s/^${BIN}-([a-z0-9_\-]+)\.tar\.xz$/\1/")
+            cp "$file" "dist/${BIN}-${VERSION}-${target}.tar.xz"
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.xz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
