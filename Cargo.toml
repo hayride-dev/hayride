@@ -74,6 +74,7 @@ wit-parser = "0.225.0"
 # lancedb deps
 arrow-array = "54.1"
 arrow-schema = "54.1"
+lance = { version = "0.25.0", features = ["protoc"] }
 lancedb = { version = "0.18.2", features = ["sentence-transformers"] }
 
 # wac deps
