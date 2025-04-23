@@ -15,6 +15,7 @@ mod generated {
 
 pub use self::generated::hayride::core::*;
 
+
 // Convert from generated types to hayride_host_traits types
 impl Into<Config> for self::generated::hayride::core::types::Config {
     fn into(self) -> Config {

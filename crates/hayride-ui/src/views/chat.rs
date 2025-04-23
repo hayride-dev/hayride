@@ -3,17 +3,19 @@ use leptos::web_sys::console;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
-use crate::stores::prompt::{Prompt, Message, Role};
+use crate::stores::prompt::Prompt;
+use crate::stores::bindings::{Request, Response, Data, Message, Role, Content, TextContent};
 use wasm_bindgen_futures::spawn_local;
 
-async fn fetch_prompt(data: String) -> Result<String, Error> {
+async fn fetch_generate(data: String) -> Result<Response, Error> {
     let response = reqwasm::http::Request::post("http://localhost:8082/v1/generate")
         .body(data)
         .send()
         .await?;
 
     // Getting response as a plain text, but could parse json here if needed
-    let prompt = response.text().await?;
+    let prompt = response.json::<Response>()
+        .await?;
     Ok(prompt)
 }
 
@@ -31,15 +33,35 @@ pub fn Chat() -> impl IntoView {
             if !msg.is_empty() {
                 // console::log_1(&"Sending message".into());
 
-                let mut prompt = expect_context::<Store<Prompt>>().get().clone();
-                // Set the prompt message
-                let messages = Message {
-                    role: Role::User,
-                    content: vec![msg.clone()],
-                };
-                prompt.messages = vec![messages];
+                let prompt = expect_context::<Store<Prompt>>().get().clone();
 
-                match serde_json::to_string(&prompt) {
+                // Set metadata based on prompt options
+                // metadata is a list of tuple string:string values
+                let metadata = vec![
+                    ("temperature".to_string(), prompt.options.temperature.to_string()),
+                    ("num_context".to_string(), prompt.options.num_context.to_string()),
+                    ("num_batch".to_string(), prompt.options.num_batch.to_string()),
+                    ("max_predict".to_string(), prompt.options.max_predict.to_string()),
+                    ("top_k".to_string(), prompt.options.top_k.to_string()),
+                    ("top_p".to_string(), prompt.options.top_p.to_string()),
+                    ("seed".to_string(), prompt.options.seed.to_string()),
+                    ("agent".to_string(), prompt.agent.clone()),
+                ];
+
+                // Create a new message with the user role
+                let message = Message {
+                    role: Role::User,
+                    content: vec![Content::Text(TextContent { text: msg.clone(), content_type: "text".to_string() })],
+                };
+
+                let request = Request {
+                    // role: Role::User,
+                    // content: vec![msg.clone()],
+                    data: Data::Messages(vec![message]),
+                    metadata: metadata,
+                };
+
+                match serde_json::to_string(&request) {
                     Ok(d) => {
                         // Spawn an async task
                         let set_messages = set_messages.clone();
@@ -48,18 +70,42 @@ pub fn Chat() -> impl IntoView {
 
                         spawn_local(async move {
                             // Call the async fetch function
-                            match fetch_prompt(d.clone()).await {
+                            match fetch_generate(d.clone()).await {
                                 Ok(response_data) => {
                                     // console::log_1(&format!("Response: {:?}", response_data).into());
+                                    if response_data.error.len() > 0 {
+                                        console::log_1(&format!("Error in response: {:?}", response_data.error).into());
+                                        return;
+                                    }
+
+                                    let data = response_data.data;
+                                    match data {
+                                        Data::Messages(messages) => {
+                                            // console::log_1(&format!("Received messages: {:?}", messages).into());
+                                            // Convert messages to ChatMessage
+                                            let chat_messages: Vec<ChatMessage> = messages.into_iter().map(|m| {
+                                                let response = m.content.into_iter().find_map(|c| {
+                                                    if let Content::Text(t) = c {
+                                                        Some(t.text)
+                                                    } else {
+                                                        None
+                                                    }
+                                                }).unwrap_or_default();
+
+                                                ChatMessage {
+                                                    sent: msg.clone(),
+                                                    response: Some(response),
+                                                }
+                                            }).collect();
     
-                                    let message = ChatMessage {
-                                        sent: msg.clone(),
-                                        response: Some(response_data),
-                                    };
-    
-                                    set_messages.update(|msgs| msgs.push(message));
-                                    set_input.set(String::new());
-                                    set_message_sent.set(true);
+                                            set_messages.update(|msgs| msgs.extend(chat_messages));
+                                            set_input.set(String::new());
+                                            set_message_sent.set(true);
+                                        },
+                                        _ => {
+                                            console::log_1(&"Unexpected data format".into());
+                                        }
+                                    }
                                 }
                                 Err(e) => {
                                     console::log_1(&format!("Fetch error: {:?}", e).into());
