@@ -92,7 +92,21 @@ impl Server {
         });
 
         match receiver.await {
-            Ok(Ok(resp)) => Ok(resp),
+            Ok(Ok(mut resp)) => {
+                // Add CORS headers to the response
+                let headers = resp.headers_mut();
+                if let Ok(origin) = "*".parse() {
+                    headers.insert("Access-Control-Allow-Origin", origin);
+                }
+                if let Ok(methods) = "GET, POST, OPTIONS".parse() {
+                    headers.insert("Access-Control-Allow-Methods", methods);
+                }
+                if let Ok(allowed_headers) = "*".parse() {
+                    headers.insert("Access-Control-Allow-Headers", allowed_headers);
+                }
+
+                Ok(resp)
+            },
             Ok(Err(e)) => Err(e.into()),
 
             // Otherwise the `sender` will get dropped along with the `Store`
