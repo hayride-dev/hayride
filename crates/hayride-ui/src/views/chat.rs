@@ -4,10 +4,12 @@ use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
 use crate::stores::prompt::Prompt;
-use crate::stores::bindings::{Request, Response, Data, Message, Role, Content, TextContent};
+use crate::stores::bindings::{Request, Response, Data, api::Message, Role, Content, TextContent};
 use wasm_bindgen_futures::spawn_local;
 
 async fn fetch_generate(data: String) -> Result<Response, Error> {
+    console::log_1(&format!("Sending request with data: {}", data).into());
+
     let response = reqwasm::http::Request::post("http://localhost:8082/v1/generate")
         .body(data)
         .send()
@@ -69,6 +71,9 @@ pub fn Chat() -> impl IntoView {
                         let set_message_sent = set_message_sent.clone();
 
                         spawn_local(async move {
+                            set_input.set(String::new());
+                            set_message_sent.set(true);
+
                             // Call the async fetch function
                             match fetch_generate(d.clone()).await {
                                 Ok(response_data) => {
@@ -99,11 +104,6 @@ pub fn Chat() -> impl IntoView {
                                             }).collect();
     
                                             set_messages.update(|msgs| msgs.extend(chat_messages));
-                                            set_input.set(String::new());
-                                            set_message_sent.set(true);
-                                        },
-                                        _ => {
-                                            console::log_1(&"Unexpected data format".into());
                                         }
                                     }
                                 }
