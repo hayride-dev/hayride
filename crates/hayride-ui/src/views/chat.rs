@@ -8,8 +8,6 @@ use crate::stores::bindings::{Request, Response, Message, Data, Role, Content, T
 use wasm_bindgen_futures::spawn_local;
 
 async fn fetch_generate(data: String) -> Result<Response, Error> {
-    console::log_1(&format!("Sending request with data: {}", data).into());
-
     let response = reqwasm::http::Request::post("http://localhost:8082/v1/generate")
         .body(data)
         .send()
@@ -33,8 +31,6 @@ pub fn Chat() -> impl IntoView {
         if sendmsg.get() {
             let msg = input.get();
             if !msg.is_empty() {
-                // console::log_1(&"Sending message".into());
-
                 let prompt = expect_context::<Store<Prompt>>().get().clone();
 
                 // Set metadata based on prompt options
@@ -71,6 +67,14 @@ pub fn Chat() -> impl IntoView {
                         let set_input = set_input.clone();
                         let set_message_sent = set_message_sent.clone();
 
+                        let message = ChatMessage {
+                            sent: msg.clone(),
+                            response: None,
+                        };
+
+                        // Push the initial message with no response yet
+                        set_messages.update(|msgs| msgs.push(message));
+
                         spawn_local(async move {
                             set_input.set(String::new());
                             set_message_sent.set(true);
@@ -87,24 +91,23 @@ pub fn Chat() -> impl IntoView {
                                     let data = response_data.data;
                                     match data {
                                         Data::Messages(messages) => {
-                                            // console::log_1(&format!("Received messages: {:?}", messages).into());
-                                            // Convert messages to ChatMessage
-                                            let chat_messages: Vec<ChatMessage> = messages.into_iter().map(|m| {
-                                                let response = m.content.into_iter().find_map(|c| {
+                                            // Convert messages to a single concatenated response
+                                            let concatenated_responses: String = messages.into_iter().filter_map(|m| {
+                                                m.content.into_iter().find_map(|c| {
                                                     if let Content::Text(t) = c {
                                                         Some(t.text)
                                                     } else {
                                                         None
                                                     }
-                                                }).unwrap_or_default();
+                                                })
+                                            }).collect::<Vec<_>>().join(" ");
 
-                                                ChatMessage {
-                                                    sent: msg.clone(),
-                                                    response: Some(response),
+                                            // Update the last message with the response
+                                            set_messages.update(|msgs| {
+                                                if let Some(last_msg) = msgs.last_mut() {
+                                                    last_msg.response = Some(concatenated_responses);
                                                 }
-                                            }).collect();
-    
-                                            set_messages.update(|msgs| msgs.extend(chat_messages));
+                                            });
                                         }
                                     }
                                 }
