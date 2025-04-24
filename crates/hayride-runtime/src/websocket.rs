@@ -11,16 +11,19 @@ use hyper_tungstenite::tungstenite::Utf8Bytes;
 use wasmtime_wasi::StreamError;
 use wasmtime_wasi_http::{body::HyperOutgoingBody, WasiHttpCtx, WasiHttpView};
 
+use bytes::{Buf, Bytes};
 use hyper::body::Body;
 use hyper::upgrade::Upgraded;
 use hyper_tungstenite::WebSocketStream;
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
+use tokio::io::{AsyncRead, ReadBuf};
+use tokio::sync::mpsc;
 use tungstenite::Message;
 use uuid::Uuid;
-use tokio::sync::mpsc;
-use tokio::io::{AsyncRead, ReadBuf};
-use std::{pin::Pin, task::{Context, Poll}};
-use bytes::{Bytes, Buf};
 
 use crate::ai::AiCtx;
 use crate::core::CoreCtx;
@@ -229,9 +232,7 @@ pub struct WebsocketInputPipe {
 }
 
 impl WebsocketInputPipe {
-    pub fn new<T: tokio::io::AsyncRead + Send + Unpin + 'static>(
-        mut reader: T,
-    ) -> Self {
+    pub fn new<T: tokio::io::AsyncRead + Send + Unpin + 'static>(mut reader: T) -> Self {
         // let (sender, receiver) = mpsc::channel(2048);
         let (sender, receiver) = mpsc::channel(2048);
         let join_handle = wasmtime_wasi::runtime::spawn(async move {
@@ -312,9 +313,7 @@ impl wasmtime_wasi::Subscribe for WebsocketInputPipe {
             return;
         }
         match self.receiver.recv().await {
-            Some(res) => {
-                self.buffer = Some(res)
-            },
+            Some(res) => self.buffer = Some(res),
             None => {
                 panic!("no more sender for an open AsyncReadStream - should be impossible")
             }

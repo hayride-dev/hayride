@@ -1,0 +1,23 @@
+package hayride:core@0.0.43;
+
+interface api {
+    use hayride:ai/types@0.0.43.{message};
+
+    variant data {
+        messages(list<message>),
+    }
+
+    record request {
+        data: data,
+        metadata: list<tuple<string, string>>,
+    }
+
+    record response {
+        data: data,
+        error: string,
+
+        // Cursor for pagination
+        next: string,
+        prev: string,
+    }
+}

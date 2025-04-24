@@ -3,17 +3,18 @@ use leptos::web_sys::console;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
-use crate::stores::prompt::{Prompt, Message, Role};
+use crate::stores::bindings::{Content, Data, Message, Request, Response, Role, TextContent};
+use crate::stores::prompt::Prompt;
 use wasm_bindgen_futures::spawn_local;
 
-async fn fetch_prompt(data: String) -> Result<String, Error> {
+async fn fetch_generate(data: String) -> Result<Response, Error> {
     let response = reqwasm::http::Request::post("http://localhost:8082/v1/generate")
         .body(data)
         .send()
         .await?;
 
     // Getting response as a plain text, but could parse json here if needed
-    let prompt = response.text().await?;
+    let prompt = response.json::<Response>().await?;
     Ok(prompt)
 }
 
@@ -29,44 +30,117 @@ pub fn Chat() -> impl IntoView {
         if sendmsg.get() {
             let msg = input.get();
             if !msg.is_empty() {
-                // console::log_1(&"Sending message".into());
+                let prompt = expect_context::<Store<Prompt>>().get().clone();
 
-                let mut prompt = expect_context::<Store<Prompt>>().get().clone();
-                // Set the prompt message
-                let messages = Message {
-                    role: Role::User,
-                    content: vec![msg.clone()],
+                // Set metadata based on prompt options
+                // metadata is a list of tuple string:string values
+                let metadata = vec![
+                    (
+                        "temperature".to_string(),
+                        prompt.options.temperature.to_string(),
+                    ),
+                    (
+                        "num_context".to_string(),
+                        prompt.options.num_context.to_string(),
+                    ),
+                    (
+                        "num_batch".to_string(),
+                        prompt.options.num_batch.to_string(),
+                    ),
+                    (
+                        "max_predict".to_string(),
+                        prompt.options.max_predict.to_string(),
+                    ),
+                    ("top_k".to_string(), prompt.options.top_k.to_string()),
+                    ("top_p".to_string(), prompt.options.top_p.to_string()),
+                    ("seed".to_string(), prompt.options.seed.to_string()),
+                    ("agent".to_string(), prompt.agent.clone()),
+                ];
+
+                // Create a new message with the user role
+                let text = TextContent {
+                    text: msg.clone(),
+                    content_type: "text".to_string(),
                 };
-                prompt.messages = vec![messages];
+                let message = Message {
+                    role: Role::User,
+                    content: vec![Content::Text(text.into()).into()],
+                };
 
-                match serde_json::to_string(&prompt) {
+                let request = Request {
+                    // role: Role::User,
+                    // content: vec![msg.clone()],
+                    data: Data::Messages(vec![message.into()]),
+                    metadata: metadata,
+                };
+
+                match serde_json::to_string(&request) {
                     Ok(d) => {
                         // Spawn an async task
                         let set_messages = set_messages.clone();
                         let set_input = set_input.clone();
                         let set_message_sent = set_message_sent.clone();
 
+                        let message = ChatMessage {
+                            sent: msg.clone(),
+                            response: None,
+                        };
+
+                        // Push the initial message with no response yet
+                        set_messages.update(|msgs| msgs.push(message));
+
                         spawn_local(async move {
+                            set_input.set(String::new());
+                            set_message_sent.set(true);
+
                             // Call the async fetch function
-                            match fetch_prompt(d.clone()).await {
+                            match fetch_generate(d.clone()).await {
                                 Ok(response_data) => {
                                     // console::log_1(&format!("Response: {:?}", response_data).into());
-    
-                                    let message = ChatMessage {
-                                        sent: msg.clone(),
-                                        response: Some(response_data),
-                                    };
-    
-                                    set_messages.update(|msgs| msgs.push(message));
-                                    set_input.set(String::new());
-                                    set_message_sent.set(true);
+                                    if response_data.error.len() > 0 {
+                                        console::log_1(
+                                            &format!(
+                                                "Error in response: {:?}",
+                                                response_data.error
+                                            )
+                                            .into(),
+                                        );
+                                        return;
+                                    }
+
+                                    let data = response_data.data;
+                                    match data {
+                                        Data::Messages(messages) => {
+                                            // Convert messages to a single concatenated response
+                                            let concatenated_responses: String = messages
+                                                .into_iter()
+                                                .filter_map(|m| {
+                                                    m.content.into_iter().find_map(|c| {
+                                                        if let Content::Text(t) = c {
+                                                            Some(t.text)
+                                                        } else {
+                                                            None
+                                                        }
+                                                    })
+                                                })
+                                                .collect::<Vec<_>>()
+                                                .join(" ");
+
+                                            // Update the last message with the response
+                                            set_messages.update(|msgs| {
+                                                if let Some(last_msg) = msgs.last_mut() {
+                                                    last_msg.response =
+                                                        Some(concatenated_responses);
+                                                }
+                                            });
+                                        }
+                                    }
                                 }
                                 Err(e) => {
                                     console::log_1(&format!("Fetch error: {:?}", e).into());
                                 }
                             }
                         });
-
                     }
                     Err(e) => {
                         console::log_1(&format!("Error serializing prompt data: {:?}", e).into());
