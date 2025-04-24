@@ -1,2 +1,2 @@
-pub mod prompt;
 pub mod bindings;
+pub mod prompt;

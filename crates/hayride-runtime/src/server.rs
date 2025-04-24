@@ -106,7 +106,7 @@ impl Server {
                 }
 
                 Ok(resp)
-            },
+            }
             Ok(Err(e)) => Err(e.into()),
 
             // Otherwise the `sender` will get dropped along with the `Store`

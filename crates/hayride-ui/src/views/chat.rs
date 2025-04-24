@@ -3,8 +3,8 @@ use leptos::web_sys::console;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
+use crate::stores::bindings::{Content, Data, Message, Request, Response, Role, TextContent};
 use crate::stores::prompt::Prompt;
-use crate::stores::bindings::{Request, Response, Message, Data, Role, Content, TextContent};
 use wasm_bindgen_futures::spawn_local;
 
 async fn fetch_generate(data: String) -> Result<Response, Error> {
@@ -14,8 +14,7 @@ async fn fetch_generate(data: String) -> Result<Response, Error> {
         .await?;
 
     // Getting response as a plain text, but could parse json here if needed
-    let prompt = response.json::<Response>()
-        .await?;
+    let prompt = response.json::<Response>().await?;
     Ok(prompt)
 }
 
@@ -36,10 +35,22 @@ pub fn Chat() -> impl IntoView {
                 // Set metadata based on prompt options
                 // metadata is a list of tuple string:string values
                 let metadata = vec![
-                    ("temperature".to_string(), prompt.options.temperature.to_string()),
-                    ("num_context".to_string(), prompt.options.num_context.to_string()),
-                    ("num_batch".to_string(), prompt.options.num_batch.to_string()),
-                    ("max_predict".to_string(), prompt.options.max_predict.to_string()),
+                    (
+                        "temperature".to_string(),
+                        prompt.options.temperature.to_string(),
+                    ),
+                    (
+                        "num_context".to_string(),
+                        prompt.options.num_context.to_string(),
+                    ),
+                    (
+                        "num_batch".to_string(),
+                        prompt.options.num_batch.to_string(),
+                    ),
+                    (
+                        "max_predict".to_string(),
+                        prompt.options.max_predict.to_string(),
+                    ),
                     ("top_k".to_string(), prompt.options.top_k.to_string()),
                     ("top_p".to_string(), prompt.options.top_p.to_string()),
                     ("seed".to_string(), prompt.options.seed.to_string()),
@@ -47,7 +58,10 @@ pub fn Chat() -> impl IntoView {
                 ];
 
                 // Create a new message with the user role
-                let text = TextContent { text: msg.clone(), content_type: "text".to_string() };
+                let text = TextContent {
+                    text: msg.clone(),
+                    content_type: "text".to_string(),
+                };
                 let message = Message {
                     role: Role::User,
                     content: vec![Content::Text(text.into()).into()],
@@ -84,7 +98,13 @@ pub fn Chat() -> impl IntoView {
                                 Ok(response_data) => {
                                     // console::log_1(&format!("Response: {:?}", response_data).into());
                                     if response_data.error.len() > 0 {
-                                        console::log_1(&format!("Error in response: {:?}", response_data.error).into());
+                                        console::log_1(
+                                            &format!(
+                                                "Error in response: {:?}",
+                                                response_data.error
+                                            )
+                                            .into(),
+                                        );
                                         return;
                                     }
 
@@ -92,20 +112,25 @@ pub fn Chat() -> impl IntoView {
                                     match data {
                                         Data::Messages(messages) => {
                                             // Convert messages to a single concatenated response
-                                            let concatenated_responses: String = messages.into_iter().filter_map(|m| {
-                                                m.content.into_iter().find_map(|c| {
-                                                    if let Content::Text(t) = c {
-                                                        Some(t.text)
-                                                    } else {
-                                                        None
-                                                    }
+                                            let concatenated_responses: String = messages
+                                                .into_iter()
+                                                .filter_map(|m| {
+                                                    m.content.into_iter().find_map(|c| {
+                                                        if let Content::Text(t) = c {
+                                                            Some(t.text)
+                                                        } else {
+                                                            None
+                                                        }
+                                                    })
                                                 })
-                                            }).collect::<Vec<_>>().join(" ");
+                                                .collect::<Vec<_>>()
+                                                .join(" ");
 
                                             // Update the last message with the response
                                             set_messages.update(|msgs| {
                                                 if let Some(last_msg) = msgs.last_mut() {
-                                                    last_msg.response = Some(concatenated_responses);
+                                                    last_msg.response =
+                                                        Some(concatenated_responses);
                                                 }
                                             });
                                         }
@@ -116,7 +141,6 @@ pub fn Chat() -> impl IntoView {
                                 }
                             }
                         });
-
                     }
                     Err(e) => {
                         console::log_1(&format!("Error serializing prompt data: {:?}", e).into());

@@ -1,4 +1,4 @@
-use serde::{Deserialize,Serialize};
+use serde::{Deserialize, Serialize};
 
 mod generated {
     wit_bindgen::generate!({
@@ -11,8 +11,8 @@ mod generated {
     });
 }
 
-pub use self::generated::hayride::core::api;
 pub use self::generated::hayride::ai::types;
+pub use self::generated::hayride::core::api;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -76,11 +76,12 @@ pub enum Data {
     Messages(Vec<Message>),
 }
 
-
 impl From<api::Data> for Data {
     fn from(d: api::Data) -> Self {
         match d {
-            api::Data::Messages(msgs) => Data::Messages(msgs.into_iter().map(|m| m.into()).collect()),
+            api::Data::Messages(msgs) => {
+                Data::Messages(msgs.into_iter().map(|m| m.into()).collect())
+            }
         }
     }
 }
@@ -88,7 +89,9 @@ impl From<api::Data> for Data {
 impl From<Data> for api::Data {
     fn from(dc: Data) -> Self {
         match dc {
-            Data::Messages(msgs) => api::Data::Messages(msgs.into_iter().map(|m| m.into()).collect()),
+            Data::Messages(msgs) => {
+                api::Data::Messages(msgs.into_iter().map(|m| m.into()).collect())
+            }
         }
     }
 }
