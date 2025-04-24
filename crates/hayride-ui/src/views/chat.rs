@@ -4,7 +4,7 @@ use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
 use crate::stores::prompt::Prompt;
-use crate::stores::bindings::{Request, Response, Data, api::Message, Role, Content, TextContent};
+use crate::stores::bindings::{Request, Response, Message, Data, Role, Content, TextContent};
 use wasm_bindgen_futures::spawn_local;
 
 async fn fetch_generate(data: String) -> Result<Response, Error> {
@@ -51,15 +51,16 @@ pub fn Chat() -> impl IntoView {
                 ];
 
                 // Create a new message with the user role
+                let text = TextContent { text: msg.clone(), content_type: "text".to_string() };
                 let message = Message {
                     role: Role::User,
-                    content: vec![Content::Text(TextContent { text: msg.clone(), content_type: "text".to_string() })],
+                    content: vec![Content::Text(text.into()).into()],
                 };
 
                 let request = Request {
                     // role: Role::User,
                     // content: vec![msg.clone()],
-                    data: Data::Messages(vec![message]),
+                    data: Data::Messages(vec![message.into()]),
                     metadata: metadata,
                 };
 
