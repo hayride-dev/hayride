@@ -161,8 +161,9 @@ impl WasmtimeEngine {
         &self,
         args: &[impl AsRef<str> + std::marker::Sync],
         silo_ctx: SiloCtx,
+        stdin: bool,
     ) -> wasmtime::Result<wasmtime::Store<Host>> {
-        let wasi_ctx = create_wasi_ctx(args, self.out_dir.clone(), self.id)?;
+        let wasi_ctx = create_wasi_ctx(args, self.out_dir.clone(), self.id, stdin)?;
         let store = wasmtime::Store::new(
             &self.engine,
             Host {
@@ -315,7 +316,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
-                let mut store = self.create_store(args, silo_ctx.clone())?;
+                let mut store = self.create_store(args, silo_ctx.clone(), true)?;
 
                 // TODO: Configuration for which bindings to use
                 let pre: HayrideCliPre<Host> =
@@ -335,7 +336,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
-                let mut store = self.create_store(args, silo_ctx.clone())?;
+                let mut store = self.create_store(args, silo_ctx.clone(), true)?;
 
                 // For Reactor, lookup the function to call and call it
                 let pre: wasmtime::component::InstancePre<Host> =
