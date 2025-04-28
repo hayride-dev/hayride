@@ -32,7 +32,8 @@ async fn main() -> Result<()> {
         hayride_core::CoreBackend::new(None),
         morphs_dir.clone(),
     )
-    .out_dir(Some(out_dir))
+    .out_dir(Some(out_dir)) // outdir set in context for spawned components
+    .inherit_stdio(true) // Inherit stdio for the cli component
     .model_path(Some(model_dir))
     .core_enabled(true)
     .silo_enabled(true)

@@ -37,6 +37,7 @@ pub struct EngineBuilder {
     registry_path: String,
     model_path: Option<String>,
     log_level: String,
+    inherit_stdio: bool,
 
     core_enabled: bool,
     ai_enabled: bool,
@@ -54,6 +55,7 @@ impl EngineBuilder {
             registry_path,
             model_path: None,
             log_level: "info".to_string(),
+            inherit_stdio: false,
 
             core_enabled: true,
             ai_enabled: false,
@@ -85,6 +87,11 @@ impl EngineBuilder {
 
     pub fn log_level(mut self, log_level: String) -> Self {
         self.log_level = log_level;
+        self
+    }
+
+    pub fn inherit_stdio(mut self, inherit_stdio: bool) -> Self {
+        self.inherit_stdio = inherit_stdio;
         self
     }
 
@@ -122,6 +129,7 @@ impl EngineBuilder {
             registry_path: self.registry_path,
             model_path: self.model_path,
             log_level: self.log_level,
+            inherit_stdio: self.inherit_stdio,
             core_enabled: self.core_enabled,
             ai_enabled: self.ai_enabled,
             silo_enabled: self.silo_enabled,
@@ -140,6 +148,8 @@ pub struct WasmtimeEngine {
     registry_path: String,
     model_path: Option<String>,
     log_level: String,
+
+    inherit_stdio: bool,
 
     core_enabled: bool,
     ai_enabled: bool,
@@ -161,9 +171,16 @@ impl WasmtimeEngine {
         &self,
         args: &[impl AsRef<str> + std::marker::Sync],
         silo_ctx: SiloCtx,
-        stdin: bool,
+        mut stdin: bool,
     ) -> wasmtime::Result<wasmtime::Store<Host>> {
-        let wasi_ctx = create_wasi_ctx(args, self.out_dir.clone(), self.id, stdin)?;
+        let mut outdir = self.out_dir.clone();
+        if self.inherit_stdio {
+            // If inheriting stdio, don't create out dir or stdin files
+            stdin = false;
+            outdir = None;
+        }
+
+        let wasi_ctx = create_wasi_ctx(args, outdir, self.id, stdin)?;
         let store = wasmtime::Store::new(
             &self.engine,
             Host {
