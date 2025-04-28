@@ -1,7 +1,8 @@
-package hayride:ai@0.0.43;
+package hayride:ai@0.0.44;
 
 interface agent {
     use types.{message};
+    use wasi:io/streams@0.2.0.{output-stream};
 
     enum error-code {
         invoke-error,
@@ -18,5 +19,6 @@ interface agent {
     resource agent {
         constructor();
         invoke: func(messages: list<message>) -> result<list<message>, error>;
+        invoke-stream: func(messages: list<message>, writer: output-stream) -> result<_,error>;
     }
 }
