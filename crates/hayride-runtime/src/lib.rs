@@ -21,8 +21,8 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use std::sync::Mutex;
 use bytes::Bytes;
-use std::io::{Read, Seek, SeekFrom}; 
-use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
+use std::path::PathBuf;
 
 pub struct Host {
     ctx: WasiCtx,
@@ -159,16 +159,22 @@ fn create_wasi_ctx(
 
         if stdin {
             let input_path = out_dir.clone() + "/" + &id.to_string() + "/in.txt";
-            let input_file = std::fs::OpenOptions::new()
+            // Create the input file to be used for stdin
+            let _in_file = std::fs::OpenOptions::new()
                 .create(true)
-                .read(true)
                 .write(true)
-                .truncate(true)
+                .read(true)
+                .truncate(false)
                 .open(input_path.clone())
-                .expect("Failed to open input file for stdin");
+                .expect("Failed to open input file");
+
+            let file_stdin = FileStdin::new(
+                std::path::PathBuf::from(&input_path),
+                id.to_string(),
+            );
 
             wasi_ctx_builder = wasi_ctx_builder.stdin(
-                FileStdin::new(input_file, out_dir.clone() + "/" + &id.to_string() + "/in.txt"),
+                file_stdin,
             );
         }
     }
@@ -182,14 +188,14 @@ fn create_wasi_ctx(
 /// Represents the StdinStream (a factory for producing input streams)
 struct FileStdin {
     name: String, // Optional name for debugging
-    file: Arc<Mutex<File>>,
+    path: PathBuf, // Path to reopen file if needed
 }
 
 impl FileStdin {
-    pub fn new(file: File, name: String) -> Self {
+    pub fn new(path: PathBuf, name: String,) -> Self {
         Self {
             name,
-            file: Arc::new(Mutex::new(file)),
+            path,
         }
     }
 }
@@ -198,7 +204,7 @@ impl StdinStream for FileStdin {
     fn stream(&self) -> Box<dyn HostInputStream> {
         Box::new(FileHostInputStream {
             name: self.name.clone(),
-            file: self.file.clone(),
+            path: self.path.clone(),
             position: Arc::new(Mutex::new(0)), // Track position across reads
         })
     }
@@ -211,7 +217,7 @@ impl StdinStream for FileStdin {
 /// Our real file-based input stream
 pub struct FileHostInputStream {
     name: String, // Optional name for debugging
-    file: Arc<Mutex<File>>,
+    path: PathBuf,
     position: Arc<Mutex<u64>>, // Track position across reads
 }
 
@@ -226,29 +232,44 @@ impl wasmtime_wasi::Subscribe for FileHostInputStream {
 #[async_trait]
 impl HostInputStream for FileHostInputStream {
     fn read(&mut self, size: usize) -> StreamResult<Bytes> {
-        let file = self.file.clone();
         let pos = self.position.clone();
+        let path = self.path.clone();
 
-        println!("{}: attempting to read {} bytes from file at position {}", self.name, size, *pos.lock().map_err(|_| StreamError::Closed)?);
-    
-        let mut file = file.lock().map_err(|_| StreamError::Closed)?;
         let mut position = pos.lock().map_err(|_| StreamError::Closed)?;
-    
-        (*file)
-            .seek(SeekFrom::Start(*position))
+        let metadata = std::fs::metadata(&path).map_err(|_| StreamError::Closed)?;
+        let file_size = metadata.len();
+
+        if *position >= file_size {
+            return Ok(Bytes::new());
+        }
+
+        println!(
+            "{}: attempting to read {} bytes from file at position {}, file size is {}",
+            self.name, size, *position, file_size
+        );
+
+        // Reopen the file to read from it
+        let mut file = std::fs::File::open(&path).map_err(|_| StreamError::Closed)?;
+
+        file.seek(SeekFrom::Start(*position))
             .map_err(|_| StreamError::Closed)?;
 
-        let mut buf = vec![0; size];
+        let bytes_available = (file_size - *position) as usize;
+        let to_read = std::cmp::min(size, bytes_available);
+
+        let mut buf = vec![0; to_read];
         let n = file.read(&mut buf).map_err(|_| StreamError::Closed)?;
-    
+
+        print!("{}: read {} bytes from file at position {}", self.name, n, *position);
+
         if n == 0 {
             return Ok(Bytes::new());
         }
-    
+
         *position += n as u64;
 
-        println!("Read {} bytes from file at position {}", n, *position);
-    
+        println!("Read {} bytes from file at new position {}", n, *position);
+
         Ok(Bytes::copy_from_slice(&buf[..n]))
     }
 
@@ -271,7 +292,7 @@ impl HostInputStream for FileHostInputStream {
     fn skip(&mut self, nelem: usize) -> StreamResult<usize> {
         self.read(nelem).map(|bytes| bytes.len())
     }
-
+    
     async fn blocking_skip(&mut self, nelem: usize) -> StreamResult<usize> {
         let bytes = self.blocking_read(nelem).await?;
         Ok(bytes.len())
