@@ -170,7 +170,6 @@ fn create_wasi_ctx(
 
             let file_stdin = FileStdin::new(
                 std::path::PathBuf::from(&input_path),
-                id.to_string(),
             );
 
             wasi_ctx_builder = wasi_ctx_builder.stdin(
@@ -187,14 +186,12 @@ fn create_wasi_ctx(
 
 /// Represents the StdinStream (a factory for producing input streams)
 struct FileStdin {
-    name: String, // Optional name for debugging
     path: PathBuf, // Path to reopen file if needed
 }
 
 impl FileStdin {
-    pub fn new(path: PathBuf, name: String,) -> Self {
+    pub fn new(path: PathBuf) -> Self {
         Self {
-            name,
             path,
         }
     }
@@ -203,7 +200,6 @@ impl FileStdin {
 impl StdinStream for FileStdin {
     fn stream(&self) -> Box<dyn HostInputStream> {
         Box::new(FileHostInputStream {
-            name: self.name.clone(),
             path: self.path.clone(),
             position: Arc::new(Mutex::new(0)), // Track position across reads
         })
@@ -216,7 +212,6 @@ impl StdinStream for FileStdin {
 
 /// Our real file-based input stream
 pub struct FileHostInputStream {
-    name: String, // Optional name for debugging
     path: PathBuf,
     position: Arc<Mutex<u64>>, // Track position across reads
 }
@@ -224,8 +219,33 @@ pub struct FileHostInputStream {
 #[async_trait]
 impl wasmtime_wasi::Subscribe for FileHostInputStream {
     async fn ready(&mut self) {
-        // No-op: always "ready" for simplicity
-        // simulate non-blocking by returning empty reads)
+        let path = self.path.clone();
+        let pos = self.position.clone();
+
+        loop {
+            // Try to get metadata
+            match std::fs::metadata(&path) {
+                Ok(metadata) => {
+                    let file_size = metadata.len();
+
+                    // Try to lock position
+                    if let Ok(position) = pos.lock() {
+                        if *position < file_size {
+                            // There is new data available
+                            return;
+                        }
+                    } else {
+                        // Couldn't lock position; treat as not ready
+                    }
+                }
+                Err(_) => {
+                    // Could not get metadata; treat as not ready yet
+                }
+            }
+
+            // No data available yet, wait a bit
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
     }
 }
 
@@ -243,11 +263,6 @@ impl HostInputStream for FileHostInputStream {
             return Ok(Bytes::new());
         }
 
-        println!(
-            "{}: attempting to read {} bytes from file at position {}, file size is {}",
-            self.name, size, *position, file_size
-        );
-
         // Reopen the file to read from it
         let mut file = std::fs::File::open(&path).map_err(|_| StreamError::Closed)?;
 
@@ -260,15 +275,11 @@ impl HostInputStream for FileHostInputStream {
         let mut buf = vec![0; to_read];
         let n = file.read(&mut buf).map_err(|_| StreamError::Closed)?;
 
-        print!("{}: read {} bytes from file at position {}", self.name, n, *position);
-
         if n == 0 {
             return Ok(Bytes::new());
         }
 
         *position += n as u64;
-
-        println!("Read {} bytes from file at new position {}", n, *position);
 
         Ok(Bytes::copy_from_slice(&buf[..n]))
     }
@@ -282,8 +293,6 @@ impl HostInputStream for FileHostInputStream {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                 continue;
             }
-
-            println!("Blocking read got {} bytes", bytes.len());
 
             return Ok(bytes);
         }
