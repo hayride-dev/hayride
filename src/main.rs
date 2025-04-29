@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
     .wac_enabled(true)
     .wasi_enabled(true)
     .ai_enabled(false)
-    .build();
+    .build()?;
 
     // Parse args to pass to the component
     let mut args: Vec<String> = env::args().collect();

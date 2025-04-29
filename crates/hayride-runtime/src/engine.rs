@@ -23,6 +23,8 @@ use wasmtime_wasi_http::WasiHttpCtx;
 
 use hyper::server::conn::http1;
 use std::collections::HashMap;
+use std::fs::{self, File};
+use std::path::Path;
 use std::sync::Arc;
 use std::{path::PathBuf, vec};
 use tokio::net::TcpListener;
@@ -120,9 +122,29 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self) -> WasmtimeEngine {
-        WasmtimeEngine {
-            id: Uuid::new_v4(),
+    pub fn build(self) -> Result<WasmtimeEngine> {
+        let id = Uuid::new_v4();
+
+        // Check if out_dir is set, if so create the output and input files
+        if let Some(ref out_dir) = self.out_dir {
+            if !self.inherit_stdio {
+                let base_dir = Path::new(out_dir).join(id.to_string());
+
+                // Create dir if it does not exist
+                fs::create_dir_all(&base_dir)?;
+
+                let output_path = base_dir.join("out.txt");
+                let error_path = base_dir.join("err.txt");
+                let input_path = base_dir.join("in.txt");
+
+                File::create(output_path.clone())?;
+                File::create(error_path.clone())?;
+                File::create(input_path.clone())?;
+            }
+        }
+
+        Ok(WasmtimeEngine {
+            id: id,
             engine: self.engine,
             out_dir: self.out_dir,
             core_backend: self.core_backend,
@@ -135,7 +157,7 @@ impl EngineBuilder {
             silo_enabled: self.silo_enabled,
             wac_enabled: self.wac_enabled,
             wasi_enabled: self.wasi_enabled,
-        }
+        })
     }
 }
 

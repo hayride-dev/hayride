@@ -12,17 +12,19 @@ use crate::core::{CoreCtx, CoreView};
 use crate::silo::{SiloCtx, SiloView};
 use crate::wac::{WacCtx, WacView};
 
-use uuid::Uuid;
-use wasmtime::component::ResourceTable;
-use wasmtime_wasi::{OutputFile, WasiCtxBuilder, StdinStream, StreamError, HostInputStream, StreamResult};
-use wasmtime_wasi::{WasiCtx, WasiView};
-use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 use async_trait::async_trait;
-use std::sync::Arc;
-use std::sync::Mutex;
 use bytes::Bytes;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::Mutex;
+use uuid::Uuid;
+use wasmtime::component::ResourceTable;
+use wasmtime_wasi::{
+    HostInputStream, OutputFile, StdinStream, StreamError, StreamResult, WasiCtxBuilder,
+};
+use wasmtime_wasi::{WasiCtx, WasiView};
+use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 pub struct Host {
     ctx: WasiCtx,
@@ -168,13 +170,9 @@ fn create_wasi_ctx(
                 .open(input_path.clone())
                 .expect("Failed to open input file");
 
-            let file_stdin = FileStdin::new(
-                std::path::PathBuf::from(&input_path),
-            );
+            let file_stdin = FileStdin::new(std::path::PathBuf::from(&input_path));
 
-            wasi_ctx_builder = wasi_ctx_builder.stdin(
-                file_stdin,
-            );
+            wasi_ctx_builder = wasi_ctx_builder.stdin(file_stdin);
         }
     }
 
@@ -183,7 +181,6 @@ fn create_wasi_ctx(
     Ok(wasi_ctx)
 }
 
-
 /// Represents the StdinStream (a factory for producing input streams)
 struct FileStdin {
     path: PathBuf, // Path to reopen file if needed
@@ -191,9 +188,7 @@ struct FileStdin {
 
 impl FileStdin {
     pub fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-        }
+        Self { path }
     }
 }
 
@@ -301,7 +296,7 @@ impl HostInputStream for FileHostInputStream {
     fn skip(&mut self, nelem: usize) -> StreamResult<usize> {
         self.read(nelem).map(|bytes| bytes.len())
     }
-    
+
     async fn blocking_skip(&mut self, nelem: usize) -> StreamResult<usize> {
         let bytes = self.blocking_read(nelem).await?;
         Ok(bytes.len())
