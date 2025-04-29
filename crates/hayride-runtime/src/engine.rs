@@ -23,6 +23,8 @@ use wasmtime_wasi_http::WasiHttpCtx;
 
 use hyper::server::conn::http1;
 use std::collections::HashMap;
+use std::fs::{self, File};
+use std::path::Path;
 use std::sync::Arc;
 use std::{path::PathBuf, vec};
 use tokio::net::TcpListener;
@@ -37,6 +39,7 @@ pub struct EngineBuilder {
     registry_path: String,
     model_path: Option<String>,
     log_level: String,
+    inherit_stdio: bool,
 
     core_enabled: bool,
     ai_enabled: bool,
@@ -54,6 +57,7 @@ impl EngineBuilder {
             registry_path,
             model_path: None,
             log_level: "info".to_string(),
+            inherit_stdio: false,
 
             core_enabled: true,
             ai_enabled: false,
@@ -88,6 +92,11 @@ impl EngineBuilder {
         self
     }
 
+    pub fn inherit_stdio(mut self, inherit_stdio: bool) -> Self {
+        self.inherit_stdio = inherit_stdio;
+        self
+    }
+
     pub fn core_enabled(mut self, core_enabled: bool) -> Self {
         self.core_enabled = core_enabled;
         self
@@ -113,21 +122,42 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self) -> WasmtimeEngine {
-        WasmtimeEngine {
-            id: Uuid::new_v4(),
+    pub fn build(self) -> Result<WasmtimeEngine> {
+        let id = Uuid::new_v4();
+
+        // Check if out_dir is set, if so create the output and input files
+        if let Some(ref out_dir) = self.out_dir {
+            if !self.inherit_stdio {
+                let base_dir = Path::new(out_dir).join(id.to_string());
+
+                // Create dir if it does not exist
+                fs::create_dir_all(&base_dir)?;
+
+                let output_path = base_dir.join("out.txt");
+                let error_path = base_dir.join("err.txt");
+                let input_path = base_dir.join("in.txt");
+
+                File::create(output_path.clone())?;
+                File::create(error_path.clone())?;
+                File::create(input_path.clone())?;
+            }
+        }
+
+        Ok(WasmtimeEngine {
+            id: id,
             engine: self.engine,
             out_dir: self.out_dir,
             core_backend: self.core_backend,
             registry_path: self.registry_path,
             model_path: self.model_path,
             log_level: self.log_level,
+            inherit_stdio: self.inherit_stdio,
             core_enabled: self.core_enabled,
             ai_enabled: self.ai_enabled,
             silo_enabled: self.silo_enabled,
             wac_enabled: self.wac_enabled,
             wasi_enabled: self.wasi_enabled,
-        }
+        })
     }
 }
 
@@ -140,6 +170,8 @@ pub struct WasmtimeEngine {
     registry_path: String,
     model_path: Option<String>,
     log_level: String,
+
+    inherit_stdio: bool,
 
     core_enabled: bool,
     ai_enabled: bool,
@@ -161,8 +193,16 @@ impl WasmtimeEngine {
         &self,
         args: &[impl AsRef<str> + std::marker::Sync],
         silo_ctx: SiloCtx,
+        mut stdin: bool,
     ) -> wasmtime::Result<wasmtime::Store<Host>> {
-        let wasi_ctx = create_wasi_ctx(args, self.out_dir.clone(), self.id)?;
+        let mut outdir = self.out_dir.clone();
+        if self.inherit_stdio {
+            // If inheriting stdio, don't create out dir or stdin files
+            stdin = false;
+            outdir = None;
+        }
+
+        let wasi_ctx = create_wasi_ctx(args, outdir, self.id, stdin)?;
         let store = wasmtime::Store::new(
             &self.engine,
             Host {
@@ -315,7 +355,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
-                let mut store = self.create_store(args, silo_ctx.clone())?;
+                let mut store = self.create_store(args, silo_ctx.clone(), true)?;
 
                 // TODO: Configuration for which bindings to use
                 let pre: HayrideCliPre<Host> =
@@ -335,7 +375,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
-                let mut store = self.create_store(args, silo_ctx.clone())?;
+                let mut store = self.create_store(args, silo_ctx.clone(), true)?;
 
                 // For Reactor, lookup the function to call and call it
                 let pre: wasmtime::component::InstancePre<Host> =

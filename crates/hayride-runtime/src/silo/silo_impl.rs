@@ -115,7 +115,10 @@ where
         .silo_enabled(true)
         // .wac_enabled(true) // TODO: Should wac be enabled for spawned morphs?
         .wasi_enabled(true)
-        .build();
+        .build()
+        .map_err(|_err| {
+            return ErrNo::EngineError;
+        })?;
 
         log::debug!("Running engine with id: {}", engine.id);
         let thread_id = engine.id;

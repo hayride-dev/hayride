@@ -1,4 +1,4 @@
-package hayride:ai@0.0.43;
+package hayride:ai@0.0.44;
 
 interface context {
     use types.{message};

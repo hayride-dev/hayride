@@ -32,14 +32,15 @@ async fn main() -> Result<()> {
         hayride_core::CoreBackend::new(None),
         morphs_dir.clone(),
     )
-    .out_dir(Some(out_dir))
+    .out_dir(Some(out_dir)) // outdir set in context for spawned components
+    .inherit_stdio(true) // Inherit stdio for the cli component
     .model_path(Some(model_dir))
     .core_enabled(true)
     .silo_enabled(true)
     .wac_enabled(true)
     .wasi_enabled(true)
     .ai_enabled(false)
-    .build();
+    .build()?;
 
     // Parse args to pass to the component
     let mut args: Vec<String> = env::args().collect();
