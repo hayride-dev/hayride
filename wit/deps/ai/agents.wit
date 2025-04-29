@@ -1,4 +1,4 @@
-package hayride:ai@0.0.44;
+package hayride:ai@0.0.45;
 
 interface agent {
     use types.{message};

@@ -1,4 +1,4 @@
-package hayride:wac@0.0.44;
+package hayride:wac@0.0.45;
 
 world imports {
     import wac;
