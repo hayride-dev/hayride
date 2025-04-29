@@ -4,7 +4,8 @@ interface process {
     /// system error numbers
     type err-no = u32;
 
-    spawn: func(path: string, args: list<string>) -> result<s32, err-no>; // pid 
+    spawn: func(path: string, args: list<string>) -> result<s32, err-no>; // pid
     wait: func(pid: u32) -> result<s32, err-no>;
+    status: func(pid: u32) -> result<bool, err-no>; // true if running
     kill: func(pid: u32, sig: s32) -> result<s32, err-no>;
 }

@@ -6,5 +6,6 @@ interface threads {
 
     spawn: func(path: string, function: string, args: list<string>) -> result<string, err-no>;
     wait: func(thread-id: string) -> result<list<u8>, err-no>;
+    status: func(thread-id: string) -> result<bool, err-no>; // true if running
     kill: func(thread-id: string) -> result<_, err-no>;
 }

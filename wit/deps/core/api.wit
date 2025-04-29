@@ -1,6 +1,43 @@
 package hayride:core@0.0.45;
 
 interface api {
+    record cast {
+        name: string,
+        function: string,
+        args: list<string>,
+    }
+
+    record sessions {
+        // morph name, session id
+        sessions: list<tuple<string, string>>,
+    }
+
+    record session-status {
+        active: bool,
+    }
+
+    variant data {
+        casts(list<cast>),
+        sessions(sessions),
+        session-status(session-status),
+    }
+
+    record request {
+        data: data,
+        metadata: list<tuple<string, string>>,
+    }
+
+    record response {
+        data: data,
+        error: string,
+
+        // Cursor for pagination
+        next: string,
+        prev: string,
+    }
+}
+
+interface ai-api {
     use hayride:ai/types@0.0.45.{message};
 
     variant data {
