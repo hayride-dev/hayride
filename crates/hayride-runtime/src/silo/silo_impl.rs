@@ -42,6 +42,18 @@ where
         }
     }
 
+    fn status(&mut self, pid: u32) -> Result<bool, process::ErrNo> {
+        // Check if the process with pid is still running
+        let pid = Pid::from_raw(pid as i32);
+        match kill(pid, None) {
+            Ok(_) => Ok(true),
+            Err(_) => {
+                // Process is not running
+                return Ok(false);
+            }
+        }
+    }
+
     fn kill(&mut self, pid: u32, sig: i32) -> Result<i32, process::ErrNo> {
         let pid = Pid::from_raw(pid as i32);
         // Send the SIGKILL signal to terminate the process
@@ -123,11 +135,18 @@ where
         log::debug!("Running engine with id: {}", engine.id);
         let thread_id = engine.id;
 
+
+        let ctx = self.ctx().clone();
         // run engine in a separate thread
         let handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
             if let Err(e) = engine.run(path, function, &args).await {
                 log::warn!("error running component: {:?}", e);
             }
+
+            // Kill thread after completion
+            ctx.kill_thread(thread_id).unwrap_or_else(|_| {
+                log::warn!("failed to kill thread after run completed {}", thread_id);
+            });
         });
 
         // Insert the thread handle into the thread map
@@ -161,6 +180,17 @@ where
                     return Ok(vec![]);
                 })
         })
+    }
+
+    fn status(&mut self, thread_id: String) -> Result<bool,threads::ErrNo> {
+        let id = Uuid::parse_str(&thread_id).map_err(|_err| {
+            return ErrNo::InvalidThreadId;
+        })?;
+
+        // Check if the thread is still running
+        let is_running = self.ctx().exists(id);
+
+        Ok(is_running)
     }
 
     fn kill(&mut self, thread_id: String) -> Result<(), threads::ErrNo> {

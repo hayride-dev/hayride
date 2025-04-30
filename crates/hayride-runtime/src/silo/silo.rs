@@ -54,6 +54,10 @@ impl SiloCtx {
         self.threads.insert(id, handle);
     }
 
+    pub fn exists(&self, thread_id: Uuid) -> bool {
+        self.threads.contains_key(&thread_id)
+    }
+
     /// Waits for the task with the given ID to complete.
     pub async fn wait_for_thread(&self, thread_id: Uuid) -> Result<(), ErrNo> {
         if let Some((_, handle)) = self.threads.remove(&thread_id) {
