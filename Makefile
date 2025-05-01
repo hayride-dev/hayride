@@ -6,5 +6,5 @@ wit-deps:
 	wit-deps update
 
 build:
-	cargo build --release --features=lancedb,llamacpp
+	cargo build --release
 
