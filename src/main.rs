@@ -56,7 +56,9 @@ async fn main() -> Result<()> {
         .to_str()
         .ok_or(anyhow::anyhow!("Failed to convert path to string"))?
         .to_string();
-    let wasm_file = hayride_utils::morphs::registry::find_morph_path(path_str, "hayride:cli")?;
+
+    // TODO: ENV for the cli morph name
+    let wasm_file = hayride_utils::morphs::registry::find_morph_path(path_str, "hayride-core:cli")?;
 
     if let Err(e) = engine.run(wasm_file, "run".to_string(), &args).await {
         eprintln!("Error running component: {:?}", e);
