@@ -11,8 +11,8 @@ jobs:
     strategy:
       matrix:
         target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
 
     steps:
       - uses: actions/checkout@v4
@@ -56,23 +56,39 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Build native macOS binary
-        run: cargo build --release
+      - name: Add macOS targets
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
 
-      - name: Package binary
+      - name: Build x86_64 macOS binary
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Build arm64 macOS binary
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Package binaries
         run: |
           mkdir -p dist
           BIN=hayride
-          TARGET=x86_64-apple-darwin
-          OUTFILE="${BIN}-${TARGET}"
-          cp target/release/$BIN $OUTFILE
-          chmod +x $OUTFILE
-          tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
+
+          for TARGET in x86_64-apple-darwin aarch64-apple-darwin; do
+            OUTFILE="${BIN}-${TARGET}"
+            cp target/$TARGET/release/$BIN $OUTFILE
+            chmod +x $OUTFILE
+            tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
+          done
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries-x86_64-apple-darwin
+          path: dist/hayride-x86_64-apple-darwin.tar.xz
 
       - uses: actions/upload-artifact@v4
         with:
-          name: release-binaries-x86_64-apple-darwin
-          path: dist/*.tar.xz
+          name: release-binaries-aarch64-apple-darwin
+          path: dist/hayride-aarch64-apple-darwin.tar.xz
 
   release:
     needs: [build, macos-build]
@@ -88,16 +104,20 @@ jobs:
       # Download artifacts for each target
       - uses: actions/download-artifact@v4
         with:
-          name: release-binaries-x86_64-unknown-linux-gnu
+          name: release-binaries-x86_64-unknown-linux-musl
           path: temp/linux
       - uses: actions/download-artifact@v4
         with:
-          name: release-binaries-aarch64-unknown-linux-gnu
+          name: release-binaries-aarch64-unknown-linux-musl
           path: temp/arm
       - uses: actions/download-artifact@v4
         with:
           name: release-binaries-x86_64-apple-darwin
           path: temp/macos
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries-aarch64-apple-darwin
+          path: temp/macos-arm
 
       - name: Rename files to include version
         run: |
@@ -108,38 +128,6 @@ jobs:
             base=$(basename "$file")
             target=$(echo "$base" | sed -E "s/^${BIN}-([a-z0-9_\-]+)\.tar\.xz$/\1/")
             cp "$file" "dist/${BIN}-${VERSION}-${target}.tar.xz"
-          done
-
-      - name: Import core morphs for release
-        env:
-          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
-        run: |
-          TAG=${{ env.RELEASE_VERSION }}
-          SOURCE_REPO=hayride-dev/core-morph
-          DEST_DIR=dist
-          FILES=("cli.wasm" "server.wasm" "ai-server.wasm" "ui.wasm")
-
-          echo "Fetching release assets from $SOURCE_REPO@$TAG..."
-
-          RELEASE_ASSETS=$(curl -s -H "Authorization: token $GH_TOKEN" \
-            https://api.github.com/repos/$SOURCE_REPO/releases/tags/$TAG)
-
-          for FILENAME in "${FILES[@]}"; do
-            echo "Searching for $FILENAME..."
-
-            ASSET_ID=$(echo "$RELEASE_ASSETS" | jq ".assets[] | select(.name == \"$FILENAME\") | .id")
-
-            if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
-              echo "⚠️ $FILENAME not found in $SOURCE_REPO@$TAG, skipping."
-              continue
-            fi
-
-            echo "Downloading $FILENAME..."
-            curl -sL \
-              -H "Authorization: token $GH_TOKEN" \
-              -H "Accept: application/octet-stream" \
-              "https://api.github.com/repos/$SOURCE_REPO/releases/assets/$ASSET_ID" \
-              -o "$DEST_DIR/$FILENAME"
           done
 
       - uses: softprops/action-gh-release@v2
