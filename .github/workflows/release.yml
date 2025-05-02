@@ -11,8 +11,8 @@ jobs:
     strategy:
       matrix:
         target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
 
     steps:
       - uses: actions/checkout@v4
@@ -56,22 +56,32 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Build native macOS binary
-        run: cargo build --release
+      - name: Add macOS targets
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
 
-      - name: Package binary
+      - name: Build x86_64 macOS binary
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Build arm64 macOS binary
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Package binaries
         run: |
           mkdir -p dist
           BIN=hayride
-          TARGET=x86_64-apple-darwin
-          OUTFILE="${BIN}-${TARGET}"
-          cp target/release/$BIN $OUTFILE
-          chmod +x $OUTFILE
-          tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
+
+          for TARGET in x86_64-apple-darwin aarch64-apple-darwin; do
+            OUTFILE="${BIN}-${TARGET}"
+            cp target/$TARGET/release/$BIN $OUTFILE
+            chmod +x $OUTFILE
+            tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
+          done
 
       - uses: actions/upload-artifact@v4
         with:
-          name: release-binaries-x86_64-apple-darwin
+          name: release-binaries-macos
           path: dist/*.tar.xz
 
   release:
@@ -88,16 +98,20 @@ jobs:
       # Download artifacts for each target
       - uses: actions/download-artifact@v4
         with:
-          name: release-binaries-x86_64-unknown-linux-gnu
+          name: release-binaries-x86_64-unknown-linux-musl
           path: temp/linux
       - uses: actions/download-artifact@v4
         with:
-          name: release-binaries-aarch64-unknown-linux-gnu
+          name: release-binaries-aarch64-unknown-linux-musl
           path: temp/arm
       - uses: actions/download-artifact@v4
         with:
           name: release-binaries-x86_64-apple-darwin
           path: temp/macos
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries-aarch64-apple-darwin
+          path: temp/macos-arm
 
       - name: Rename files to include version
         run: |
@@ -115,7 +129,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
         run: |
           TAG=${{ env.RELEASE_VERSION }}
-          SOURCE_REPO=hayride-dev/core-morph
+          SOURCE_REPO=hayride-dev/core
           DEST_DIR=dist
           FILES=("cli.wasm" "server.wasm" "ai-server.wasm" "ui.wasm")
 
