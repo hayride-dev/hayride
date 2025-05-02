@@ -79,10 +79,16 @@ jobs:
             tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
           done
 
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries-x86_64-apple-darwin
+          path: dist/hayride-x86_64-apple-darwin.tar.xz
+
       - uses: actions/upload-artifact@v4
         with:
-          name: release-binaries-macos
-          path: dist/*.tar.xz
+          name: release-binaries-aarch64-apple-darwin
+          path: dist/hayride-aarch64-apple-darwin.tar.xz
 
   release:
     needs: [build, macos-build]
