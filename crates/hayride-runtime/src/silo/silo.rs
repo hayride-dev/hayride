@@ -148,6 +148,9 @@ pub enum ErrNo {
     ThreadFailed = 5,
     EngineError = 6,
     FailedToFindRegistry = 7,
+    FailedToCreateLogDir = 8,
+    FailedToCreateLogFile = 9,
+    FailedToSpawnProcess = 10,
     Failed,
 }
 

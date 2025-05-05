@@ -4,22 +4,46 @@ use crate::silo::{SiloImpl, SiloView};
 
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
-use std::fs;
-use std::fs::File;
 use std::io::Read;
-use std::process::Command;
 use uuid::Uuid;
+use std::fs::{self, File, create_dir_all};
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
 impl<T> process::Host for SiloImpl<T>
 where
     T: SiloView,
 {
     fn spawn(&mut self, name: String, args: Vec<String>) -> Result<i32, process::ErrNo> {
+
+
+        // Setup logging
+        let log_dir = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".hayride/logs");
+
+        create_dir_all(&log_dir).map_err(|_| {
+            ErrNo::FailedToCreateLogDir
+        })?;
+
+        // Optionally make log filename dynamic (e.g., with timestamp or name)
+        let stdout_log = File::create(log_dir.join("stdout.log")).map_err(|_| {
+            ErrNo::FailedToCreateLogFile
+        })?;
+        let stderr_log = File::create(log_dir.join("stderr.log")).map_err(|_| {
+            ErrNo::FailedToCreateLogFile
+        })?;
+
         // Spawn a process and return the pid
         let child = Command::new(name)
             .args(args)
+            // TODO: Rolling log to /.hayride/logs
+            .stdout(Stdio::from(stdout_log))
+            .stderr(Stdio::from(stderr_log))
             .spawn()
-            .expect("failed to execute process");
+            .map_err(|_| {
+                ErrNo::FailedToSpawnProcess
+            })?;
 
         Ok(child.id() as i32)
     }
