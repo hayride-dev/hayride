@@ -1,4 +1,4 @@
-.PHONY: build wit-deps
+.PHONY: build wit-deps install
 
 default: build
 
@@ -8,3 +8,5 @@ wit-deps:
 build:
 	cargo build --release
 
+install:
+	cargo install --path .
