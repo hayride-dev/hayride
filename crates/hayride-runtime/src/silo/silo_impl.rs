@@ -4,35 +4,29 @@ use crate::silo::{SiloImpl, SiloView};
 
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
+use std::fs::{self, create_dir_all, File};
 use std::io::Read;
-use uuid::Uuid;
-use std::fs::{self, File, create_dir_all};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use uuid::Uuid;
 
 impl<T> process::Host for SiloImpl<T>
 where
     T: SiloView,
 {
     fn spawn(&mut self, name: String, args: Vec<String>) -> Result<i32, process::ErrNo> {
-
-
         // Setup logging
         let log_dir = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join(".hayride/logs");
 
-        create_dir_all(&log_dir).map_err(|_| {
-            ErrNo::FailedToCreateLogDir
-        })?;
+        create_dir_all(&log_dir).map_err(|_| ErrNo::FailedToCreateLogDir)?;
 
         // Optionally make log filename dynamic (e.g., with timestamp or name)
-        let stdout_log = File::create(log_dir.join("stdout.log")).map_err(|_| {
-            ErrNo::FailedToCreateLogFile
-        })?;
-        let stderr_log = File::create(log_dir.join("stderr.log")).map_err(|_| {
-            ErrNo::FailedToCreateLogFile
-        })?;
+        let stdout_log =
+            File::create(log_dir.join("stdout.log")).map_err(|_| ErrNo::FailedToCreateLogFile)?;
+        let stderr_log =
+            File::create(log_dir.join("stderr.log")).map_err(|_| ErrNo::FailedToCreateLogFile)?;
 
         // Spawn a process and return the pid
         let child = Command::new(name)
@@ -41,9 +35,7 @@ where
             .stdout(Stdio::from(stdout_log))
             .stderr(Stdio::from(stderr_log))
             .spawn()
-            .map_err(|_| {
-                ErrNo::FailedToSpawnProcess
-            })?;
+            .map_err(|_| ErrNo::FailedToSpawnProcess)?;
 
         Ok(child.id() as i32)
     }
@@ -159,7 +151,6 @@ where
         log::debug!("Running engine with id: {}", engine.id);
         let thread_id = engine.id;
 
-
         let ctx = self.ctx().clone();
         // run engine in a separate thread
         let handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
@@ -206,7 +197,7 @@ where
         })
     }
 
-    fn status(&mut self, thread_id: String) -> Result<bool,threads::ErrNo> {
+    fn status(&mut self, thread_id: String) -> Result<bool, threads::ErrNo> {
         let id = Uuid::parse_str(&thread_id).map_err(|_err| {
             return ErrNo::InvalidThreadId;
         })?;
