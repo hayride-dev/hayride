@@ -9,6 +9,7 @@ hayride-core = { workspace = true }
 hayride-runtime = { workspace = true }
 hayride-utils = { workspace = true }
 anyhow = { workspace = true }
+log = { workspace = true }
 tokio = { workspace = true }
 dirs = { workspace = true }
 wasmtime = { workspace = true }

@@ -4,10 +4,10 @@ use crate::silo::{SiloImpl, SiloView};
 
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
-use std::fs::{self, create_dir_all, File};
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use uuid::Uuid;
 
 impl<T> process::Host for SiloImpl<T>
@@ -16,24 +16,14 @@ where
 {
     fn spawn(&mut self, name: String, args: Vec<String>) -> Result<i32, process::ErrNo> {
         // Setup logging
-        let log_dir = dirs::home_dir()
+        let log_path = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".hayride/logs");
-
-        create_dir_all(&log_dir).map_err(|_| ErrNo::FailedToCreateLogDir)?;
-
-        // Optionally make log filename dynamic (e.g., with timestamp or name)
-        let stdout_log =
-            File::create(log_dir.join("stdout.log")).map_err(|_| ErrNo::FailedToCreateLogFile)?;
-        let stderr_log =
-            File::create(log_dir.join("stderr.log")).map_err(|_| ErrNo::FailedToCreateLogFile)?;
+            .join(".hayride/logs/hayride.daemon.log");
 
         // Spawn a process and return the pid
         let child = Command::new(name)
             .args(args)
-            // TODO: Rolling log to /.hayride/logs
-            .stdout(Stdio::from(stdout_log))
-            .stderr(Stdio::from(stderr_log))
+            .env("HAYRIDE_LOG", log_path)
             .spawn()
             .map_err(|_| ErrNo::FailedToSpawnProcess)?;
 

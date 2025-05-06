@@ -13,6 +13,15 @@ async fn main() -> Result<()> {
     let morphs_dir: String = format!("{}/registry/morphs", hayride_dir);
     let model_dir: String = format!("{}/ai/models", hayride_dir);
 
+    // Setup logging
+    // The ENV "HAYRIDE_LOG" can be used to set the log file path
+    // otherwise fallback to $HOME/.hayride/logs/hayride.log
+    let log_path: String = env::var("HAYRIDE_LOG").unwrap_or(format!(
+        "{}/.hayride/logs/hayride.log",
+        home_dir.to_string_lossy()
+    ));
+    hayride_utils::log::logger::set_log_path(log_path)?;
+
     // Output directory
     let mut out_dir = home_dir.clone();
     out_dir.push(hayride_dir);
@@ -61,7 +70,7 @@ async fn main() -> Result<()> {
     let wasm_file = hayride_utils::morphs::registry::find_morph_path(path_str, "hayride-core:cli")?;
 
     if let Err(e) = engine.run(wasm_file, "run".to_string(), &args).await {
-        eprintln!("Error running component: {:?}", e);
+        log::error!("Error running component: {:?}", e);
     }
 
     Ok(())
