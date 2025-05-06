@@ -6,6 +6,15 @@ use std::{env, fs};
 use toml::Value;
 
 static LOG_HANDLE: OnceLock<ReloadHandle<log_reload::LevelFilter<Logger>>> = OnceLock::new();
+static LOG_PATH: OnceLock<String> = OnceLock::new();
+
+/// Sets a static log path that all future logger initializations will use.
+pub fn set_log_path(path: String) -> anyhow::Result<()> {
+    if LOG_PATH.set(path).is_err() {
+        return Err(anyhow::anyhow!("Log path has already been set"));
+    }
+    Ok(())
+}
 
 /// Initializes the logger with a specific log level for the workspace crates.
 /// Will only initialize once, even if called multiple times to prevent multiple env logger initialization
@@ -68,6 +77,20 @@ pub fn init_logger(log_level: String) -> anyhow::Result<()> {
     // Apply log level to the workspace crates
     for crate_name in workspace_crates {
         builder.filter_module(crate_name.as_str(), level_filter);
+    }
+
+    // Ensure the log directory exists before creating the file
+    if let Some(log_path) = LOG_PATH.get() {
+        if let Some(parent) = std::path::Path::new(log_path).parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        // Open the log file in append mode if it exists, or create it otherwise
+        let log_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_path)?;
+        builder.target(env_logger::Target::Pipe(Box::new(log_file)));
     }
 
     let logger = builder.build();
