@@ -16,14 +16,14 @@ where
 {
     fn spawn(&mut self, name: String, args: Vec<String>) -> Result<i32, process::ErrNo> {
         // Setup logging
-        let log_dir = dirs::home_dir()
+        let log_path = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join(".hayride/logs/hayride.daemon.log");
 
         // Spawn a process and return the pid
         let child = Command::new(name)
             .args(args)
-            .env("HAYRIDE_LOG", log_dir)
+            .env("HAYRIDE_LOG", log_path)
             .spawn()
             .map_err(|_| ErrNo::FailedToSpawnProcess)?;
 
