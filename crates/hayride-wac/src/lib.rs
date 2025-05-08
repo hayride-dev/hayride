@@ -82,22 +82,7 @@ impl WacTrait for WacBackend {
         // Register the plug dependencies into the graph
         let mut plug_packages = Vec::new();
         for plug_path in plug_paths {
-            // First check if this is a morph path provided
-            let plug_path = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &plug_path) {
-                Ok(path) => path,
-                Err(_) => {
-                    // If not a valid morph path, processes it as a regular file path returning PathBuf
-                    let path = Path::new(&plug_path);
-                    if !path.is_file() {
-                        return Err(ErrorCode::FileNotFound);
-                    }
-                    let path = path.canonicalize().map_err(|e| {
-                        log::error!("Failed to canonicalize plug path: {}", e);
-                        ErrorCode::FileNotFound
-                    })?;
-                    path
-                }
-            };
+            let plug_path = resolve_morph_path(registry_path, &plug_path)?;
 
             let name = Path::new(&plug_path)
                 .file_name()
@@ -114,22 +99,7 @@ impl WacTrait for WacBackend {
         }
 
         // Socket component
-        // First check if this is a morph path provided
-        let socket_path = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &socket_path) {
-            Ok(path) => path,
-            Err(_) => {
-                // If not a valid morph path, processes it as a regular file path returning PathBuf
-                let path = Path::new(&socket_path);
-                if !path.is_file() {
-                    return Err(ErrorCode::FileNotFound);
-                }
-                let path = path.canonicalize().map_err(|e| {
-                    log::error!("Failed to canonicalize socket path: {}", e);
-                    ErrorCode::FileNotFound
-                })?;
-                path
-            }
-        };
+        let socket_path = resolve_morph_path(registry_path, &socket_path)?;
 
         let package =
             Package::from_file("socket", None, socket_path, graph.types_mut()).map_err(|e| {
@@ -303,4 +273,25 @@ impl PackageResolver {
 
         Ok(packages)
     }
+}
+
+fn resolve_morph_path(registry_path: &str, morph_path: &str) -> Result<PathBuf, ErrorCode> {
+    // First, check if the morph path is a valid morph path
+    let result = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &morph_path) {
+        Ok(path) => path,
+        Err(_) => {
+            // If not a valid morph path, processes it as a regular file path returning PathBuf
+            let path = Path::new(&morph_path);
+            if !path.is_file() {
+                return Err(ErrorCode::FileNotFound);
+            }
+            let path = path.canonicalize().map_err(|e| {
+                log::error!("Failed to canonicalize plug path: {}", e);
+                ErrorCode::FileNotFound
+            })?;
+            path
+        }
+    };
+
+    Ok(result)
 }
