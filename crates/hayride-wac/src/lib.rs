@@ -72,11 +72,18 @@ impl WacTrait for WacBackend {
     }
 
     fn plug(&mut self, socket_path: String, plug_paths: Vec<String>) -> Result<Vec<u8>, ErrorCode> {
+        // Build registry path from home directory
+        let mut registry_path = dirs::home_dir().ok_or_else(|| ErrorCode::ComposeFailed)?;
+        registry_path.push(self.registry_path.clone());
+        let registry_path = registry_path.to_str().ok_or_else(|| ErrorCode::ComposeFailed)?;
+
         let mut graph = CompositionGraph::new();
 
         // Register the plug dependencies into the graph
         let mut plug_packages = Vec::new();
         for plug_path in plug_paths {
+            let plug_path = resolve_morph_path(registry_path, &plug_path)?;
+
             let name = Path::new(&plug_path)
                 .file_name()
                 .and_then(|name| name.to_str())
@@ -92,6 +99,8 @@ impl WacTrait for WacBackend {
         }
 
         // Socket component
+        let socket_path = resolve_morph_path(registry_path, &socket_path)?;
+
         let package =
             Package::from_file("socket", None, socket_path, graph.types_mut()).map_err(|e| {
                 log::error!("Failed to find socket: {}", e);
@@ -264,4 +273,25 @@ impl PackageResolver {
 
         Ok(packages)
     }
+}
+
+fn resolve_morph_path(registry_path: &str, morph_path: &str) -> Result<PathBuf, ErrorCode> {
+    // First, check if the morph path is a valid morph path
+    let result = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &morph_path) {
+        Ok(path) => path,
+        Err(_) => {
+            // If not a valid morph path, processes it as a regular file path returning PathBuf
+            let path = Path::new(&morph_path);
+            if !path.is_file() {
+                return Err(ErrorCode::FileNotFound);
+            }
+            let path = path.canonicalize().map_err(|e| {
+                log::error!("Failed to canonicalize plug path: {}", e);
+                ErrorCode::FileNotFound
+            })?;
+            path
+        }
+    };
+
+    Ok(result)
 }
