@@ -6,6 +6,7 @@ edition.workspace = true
 
 [dependencies]
 hayride-host-traits = { workspace = true }
+hayride-utils = { workspace = true }
 
 anyhow = { workspace = true }
 indexmap = { workspace = true }

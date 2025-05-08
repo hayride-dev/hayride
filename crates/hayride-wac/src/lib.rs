@@ -72,11 +72,33 @@ impl WacTrait for WacBackend {
     }
 
     fn plug(&mut self, socket_path: String, plug_paths: Vec<String>) -> Result<Vec<u8>, ErrorCode> {
+        // Build registry path from home directory
+        let mut registry_path = dirs::home_dir().ok_or_else(|| ErrorCode::ComposeFailed)?;
+        registry_path.push(self.registry_path.clone());
+        let registry_path = registry_path.to_str().ok_or_else(|| ErrorCode::ComposeFailed)?;
+
         let mut graph = CompositionGraph::new();
 
         // Register the plug dependencies into the graph
         let mut plug_packages = Vec::new();
         for plug_path in plug_paths {
+            // First check if this is a morph path provided
+            let plug_path = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &plug_path) {
+                Ok(path) => path,
+                Err(_) => {
+                    // If not a valid morph path, processes it as a regular file path returning PathBuf
+                    let path = Path::new(&plug_path);
+                    if !path.is_file() {
+                        return Err(ErrorCode::FileNotFound);
+                    }
+                    let path = path.canonicalize().map_err(|e| {
+                        log::error!("Failed to canonicalize plug path: {}", e);
+                        ErrorCode::FileNotFound
+                    })?;
+                    path
+                }
+            };
+
             let name = Path::new(&plug_path)
                 .file_name()
                 .and_then(|name| name.to_str())
@@ -92,6 +114,23 @@ impl WacTrait for WacBackend {
         }
 
         // Socket component
+        // First check if this is a morph path provided
+        let socket_path = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &socket_path) {
+            Ok(path) => path,
+            Err(_) => {
+                // If not a valid morph path, processes it as a regular file path returning PathBuf
+                let path = Path::new(&socket_path);
+                if !path.is_file() {
+                    return Err(ErrorCode::FileNotFound);
+                }
+                let path = path.canonicalize().map_err(|e| {
+                    log::error!("Failed to canonicalize socket path: {}", e);
+                    ErrorCode::FileNotFound
+                })?;
+                path
+            }
+        };
+
         let package =
             Package::from_file("socket", None, socket_path, graph.types_mut()).map_err(|e| {
                 log::error!("Failed to find socket: {}", e);
