@@ -14,9 +14,6 @@ pub struct SiloCtx {
     // The core backend for the runtime to provide for each engine.
     pub core_backend: CoreBackend,
 
-    // Process specific environment variables to pass to the spawned process.
-    pub envs: Vec<(String, String)>,
-
     // A concurrent safe map of spawned threads by id.
     pub threads: Arc<dashmap::DashMap<Uuid, tokio::task::JoinHandle<()>>>,
     thread_id: Arc<AtomicI32>,
@@ -35,7 +32,6 @@ impl SiloCtx {
             out_dir,
             model_path,
             core_backend,
-            envs: Vec::new(),
             threads: Arc::new(dashmap::DashMap::new()),
             thread_id,
             registry_path: registry_path,
@@ -87,17 +83,6 @@ impl SiloCtx {
         } else {
             Err(ErrNo::ThreadNotFound)
         }
-    }
-
-    pub fn set_env(&mut self, key: String, value: String) -> Result<bool, ErrNo> {
-        // Check and update existing environment variable or add a new one
-        if let Some(pos) = self.envs.iter().position(|(k, _)| k == &key) {
-            self.envs[pos] = (key, value);
-        } else {
-            self.envs.push((key, value));
-        }
-
-        Ok(true)
     }
 }
 

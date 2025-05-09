@@ -600,7 +600,7 @@ impl WasmtimeEngine {
                         log::debug!("config: {:?}", c);
                     }
                     None => {
-                        println!("No Config Found");
+                        log::warn!("No Config Found");
                     }
                 }
                 log::debug!("starting server with address: {}", address);
@@ -687,7 +687,7 @@ impl WasmtimeEngine {
                         log::debug!("config: {:?}", c);
                     }
                     None => {
-                        println!("No Config Found");
+                        log::warn!("No Config Found");
                     }
                 }
 
