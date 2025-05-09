@@ -22,6 +22,9 @@ async fn main() -> Result<()> {
     ));
     hayride_utils::log::logger::set_log_path(log_path)?;
 
+    let bin_path = env::var("HAYRIDE_BIN").unwrap_or("hayride-core:cli".to_string());
+    let entrypoint = env::var("HAYRIDE_ENTRYPOINT").unwrap_or("run".to_string());
+
     // Output directory
     let mut out_dir = home_dir.clone();
     out_dir.push(hayride_dir);
@@ -48,7 +51,7 @@ async fn main() -> Result<()> {
     .silo_enabled(true)
     .wac_enabled(true)
     .wasi_enabled(true)
-    .ai_enabled(false)
+    .ai_enabled(true)
     .build()?;
 
     // Parse args to pass to the component
@@ -67,9 +70,9 @@ async fn main() -> Result<()> {
         .to_string();
 
     // TODO: ENV for the cli morph name
-    let wasm_file = hayride_utils::morphs::registry::find_morph_path(path_str, "hayride-core:cli")?;
+    let wasm_file = hayride_utils::morphs::registry::find_morph_path(path_str, &bin_path)?;
 
-    if let Err(e) = engine.run(wasm_file, "run".to_string(), &args).await {
+    if let Err(e) = engine.run(wasm_file, entrypoint.to_string(), &args).await {
         log::error!("Error running component: {:?}", e);
     }
 

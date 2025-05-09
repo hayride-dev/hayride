@@ -75,7 +75,9 @@ impl WacTrait for WacBackend {
         // Build registry path from home directory
         let mut registry_path = dirs::home_dir().ok_or_else(|| ErrorCode::ComposeFailed)?;
         registry_path.push(self.registry_path.clone());
-        let registry_path = registry_path.to_str().ok_or_else(|| ErrorCode::ComposeFailed)?;
+        let registry_path = registry_path
+            .to_str()
+            .ok_or_else(|| ErrorCode::ComposeFailed)?;
 
         let mut graph = CompositionGraph::new();
 
@@ -277,7 +279,10 @@ impl PackageResolver {
 
 fn resolve_morph_path(registry_path: &str, morph_path: &str) -> Result<PathBuf, ErrorCode> {
     // First, check if the morph path is a valid morph path
-    let result = match hayride_utils::morphs::registry::find_morph_path(registry_path.to_string(), &morph_path) {
+    let result = match hayride_utils::morphs::registry::find_morph_path(
+        registry_path.to_string(),
+        &morph_path,
+    ) {
         Ok(path) => path,
         Err(_) => {
             // If not a valid morph path, processes it as a regular file path returning PathBuf

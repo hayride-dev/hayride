@@ -6,7 +6,6 @@ use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use std::fs::{self, File};
 use std::io::Read;
-use std::path::PathBuf;
 use std::process::Command;
 use uuid::Uuid;
 
@@ -14,18 +13,22 @@ impl<T> process::Host for SiloImpl<T>
 where
     T: SiloView,
 {
-    fn spawn(&mut self, name: String, args: Vec<String>) -> Result<i32, process::ErrNo> {
-        // Setup logging
-        let log_path = dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".hayride/logs/hayride.daemon.log");
+    fn spawn(
+        &mut self,
+        name: String,
+        args: Vec<String>,
+        envs: Vec<(String, String)>,
+    ) -> Result<i32, process::ErrNo> {
+        let mut cmd = Command::new(name);
+        cmd.args(args);
+
+        // Add environment variables to the command
+        for (key, value) in envs {
+            cmd.env(key, value);
+        }
 
         // Spawn a process and return the pid
-        let child = Command::new(name)
-            .args(args)
-            .env("HAYRIDE_LOG", log_path)
-            .spawn()
-            .map_err(|_| ErrNo::FailedToSpawnProcess)?;
+        let child = cmd.spawn().map_err(|_| ErrNo::FailedToSpawnProcess)?;
 
         Ok(child.id() as i32)
     }
