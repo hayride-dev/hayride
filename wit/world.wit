@@ -1,4 +1,4 @@
-package hayride:broom@0.0.1;
+package hayride:runtime@0.0.1;
 
 world hayride-server {
     include hayride:wasip2/imports@0.0.47;
