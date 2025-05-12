@@ -1,4 +1,4 @@
-package hayride:ai@0.0.46;
+package hayride:ai@0.0.47;
 
 world imports {
     include wasi:nn/ml@0.2.0-rc-2024-10-28;

@@ -11,6 +11,7 @@ use crate::websocket::WebsocketServer;
 use crate::Host;
 
 use hayride_core::CoreBackend;
+use hayride_host_traits::core::types::{Feature, Morph};
 use hayride_utils::wit::parser::WitParser;
 
 use wasmtime::component::types::ComponentItem;
@@ -530,32 +531,64 @@ impl WasmtimeEngine {
                 let config = self.core_backend.get_config();
                 match config {
                     Some(c) => {
+                        // Check if imports include ai to determine which config to use
+                        let mut ai = false;
+                        wit_parsed
+                            .imports()
+                            .iter()
+                            .for_each(|i| match i.name.namespace.as_str() {
+                                "hayride" => match i.name.name.as_str() {
+                                    "ai" => {
+                                        ai = true;
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            });
+
+                        let (log_level, url) = if ai {
+                            let ai_feature = c
+                                .features
+                                .iter()
+                                .find_map(|f| {
+                                    if let Feature::Ai(ai) = f {
+                                        Some(ai)
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .ok_or_else(|| anyhow::anyhow!("AI feature not found in Config"))?;
+
+                            (
+                                ai_feature.logging.level.clone(),
+                                Url::parse(&ai_feature.http.address)?,
+                            )
+                        } else {
+                            let server_morph = c
+                                .core
+                                .iter()
+                                .find_map(|m| {
+                                    if let Morph::Server(server) = m {
+                                        Some(server)
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("Server morph not found in Config")
+                                })?;
+
+                            (
+                                server_morph.logging.level.clone(),
+                                Url::parse(&server_morph.http.address)?,
+                            )
+                        };
+
                         // Check if address is set in options
                         if let Some(addr) = options.get("address") {
                             address = addr.to_string();
                         } else {
                             // Otherwise, use config value
-
-                            // Check if imports include ai to determine which config to use
-                            let mut ai = false;
-                            wit_parsed.imports().iter().for_each(|i| {
-                                match i.name.namespace.as_str() {
-                                    "hayride" => match i.name.name.as_str() {
-                                        "ai" => {
-                                            ai = true;
-                                        }
-                                        _ => {}
-                                    },
-                                    _ => {}
-                                }
-                            });
-
-                            let url = if ai {
-                                Url::parse(&c.morphs.ai.http.address)?
-                            } else {
-                                Url::parse(&c.morphs.server.http.address)?
-                            };
-
                             let port = url.port_or_known_default().unwrap_or(80);
                             address = url.host_str().unwrap_or(&address).to_string()
                                 + ":"
@@ -563,11 +596,11 @@ impl WasmtimeEngine {
                         }
 
                         // Overwrite the log level if config sets
-                        hayride_utils::log::init_logger(c.clone().logging.level)?;
+                        hayride_utils::log::init_logger(log_level)?;
                         log::debug!("config: {:?}", c);
                     }
                     None => {
-                        println!("No Config Found");
+                        log::warn!("No Config Found");
                     }
                 }
                 log::debug!("starting server with address: {}", address);
@@ -625,12 +658,24 @@ impl WasmtimeEngine {
                 let config = self.core_backend.get_config();
                 match config {
                     Some(c) => {
+                        let ai_feature = c
+                            .features
+                            .iter()
+                            .find_map(|f| {
+                                if let Feature::Ai(ai) = f {
+                                    Some(ai)
+                                } else {
+                                    None
+                                }
+                            })
+                            .ok_or_else(|| anyhow::anyhow!("AI feature not found in Config"))?;
+
                         // Check if address is set in options
                         if let Some(addr) = options.get("address") {
                             address = addr.to_string();
                         } else {
                             // Otherwise, use config value
-                            let url = Url::parse(&c.morphs.ai.websocket.address)?;
+                            let url = Url::parse(&ai_feature.websocket.address)?;
                             let port = url.port_or_known_default().unwrap_or(80);
                             address = url.host_str().unwrap_or(&address).to_string()
                                 + ":"
@@ -638,11 +683,11 @@ impl WasmtimeEngine {
                         }
 
                         // Overwrite the log level if config sets
-                        hayride_utils::log::init_logger(c.clone().logging.level)?;
+                        hayride_utils::log::init_logger(ai_feature.logging.level.clone())?;
                         log::debug!("config: {:?}", c);
                     }
                     None => {
-                        println!("No Config Found");
+                        log::warn!("No Config Found");
                     }
                 }
 

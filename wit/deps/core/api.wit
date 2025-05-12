@@ -1,4 +1,4 @@
-package hayride:core@0.0.46;
+package hayride:core@0.0.47;
 
 interface api {
     record cast {
@@ -45,7 +45,7 @@ interface api {
 }
 
 interface ai-api {
-    use hayride:ai/types@0.0.46.{message};
+    use hayride:ai/types@0.0.47.{message};
 
     variant data {
         unknown,

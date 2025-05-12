@@ -1,15 +1,10 @@
-package hayride:core@0.0.46;
+package hayride:core@0.0.47;
 
 interface types {
     record logging {
         enabled: bool,
         level: string,
         file: string
-    }
-
-    record morphs {
-        server: server,
-        ai: ai
     }
 
     record http {
@@ -21,24 +16,34 @@ interface types {
     }
 
     record server {
-        http: http
+        bin: string,
+        logging: logging,
+        http: http,
+    }
+
+    record cli {
+        bin: string,
+        logging: logging,
     }
 
     record ai {
-        websocket: websocket,
+        bin: string,
+        logging: logging,
         http: http,
-        llm: llm,
+        websocket: websocket,
     }
 
-    record llm {
-        model: string
+    record ui {
+        bin: string,
+        logging: logging,
+        http: http,
     }
 
     record config {
         version: string,
         license: string,
-        logging: logging,
-        morphs: morphs,
+        core: list<morph>,
+        features: list<feature>,
     }
 
     enum error-code {
@@ -46,6 +51,16 @@ interface types {
         get-failed,
         config-not-set,
         unknown
+    }
+
+    variant morph {
+        cli(cli),
+        server(server),
+    }
+
+    variant feature {
+        ai(ai),
+        ui(ui),
     }
     
     resource error {
