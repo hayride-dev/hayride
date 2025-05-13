@@ -11,7 +11,7 @@ use crate::websocket::WebsocketServer;
 use crate::Host;
 
 use hayride_core::CoreBackend;
-use hayride_host_traits::core::types::{Feature, Morph};
+use hayride_host_traits::core::types::Feature;
 use hayride_utils::wit::parser::WitParser;
 
 use wasmtime::component::types::ComponentItem;
@@ -529,7 +529,7 @@ impl WasmtimeEngine {
                 // Get config from server instance
                 let mut store = self.create_store(args, silo_ctx.clone(), false)?;
                 let server = pre.instantiate_async(&mut store).await?;
-                let config= match server.hayride_http_config().call_get(store).await? {
+                let config = match server.hayride_http_config().call_get(store).await? {
                     Ok(c) => {
                         log::info!("server config: {:?}", c);
                         c
