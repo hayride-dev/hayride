@@ -526,76 +526,21 @@ impl WasmtimeEngine {
                     self.model_path.clone(),
                 );
 
-                // Get config from core context
-                let mut address = "127.0.0.1:8080".to_string(); // Default address
-                let config = self.core_backend.get_config();
-                match config {
-                    Some(c) => {
-                        // Check if imports include ai to determine which config to use
-                        let mut ai = false;
-                        wit_parsed
-                            .imports()
-                            .iter()
-                            .for_each(|i| match i.name.namespace.as_str() {
-                                "hayride" => match i.name.name.as_str() {
-                                    "ai" => {
-                                        ai = true;
-                                    }
-                                    _ => {}
-                                },
-                                _ => {}
-                            });
-
-                        let url = if ai {
-                            let ai_feature = c
-                                .features
-                                .iter()
-                                .find_map(|f| {
-                                    if let Feature::Ai(ai) = f {
-                                        Some(ai)
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .ok_or_else(|| anyhow::anyhow!("AI feature not found in Config"))?;
-
-                                Url::parse(&ai_feature.http.address)?
-                        } else {
-                            let server_morph = c
-                                .core
-                                .iter()
-                                .find_map(|m| {
-                                    if let Morph::Server(server) = m {
-                                        Some(server)
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!("Server morph not found in Config")
-                                })?;
-
-                                Url::parse(&server_morph.http.address)?
-                        };
-
-                        // Check if address is set in options
-                        if let Some(addr) = options.get("address") {
-                            address = addr.to_string();
-                        } else {
-                            // Otherwise, use config value
-                            let port = url.port_or_known_default().unwrap_or(80);
-                            address = url.host_str().unwrap_or(&address).to_string()
-                                + ":"
-                                + &port.to_string();
-                        }
-
-                        log::debug!("config: {:?}", c);
+                // Get config from server instance
+                let mut store = self.create_store(args, silo_ctx.clone(), false)?;
+                let server = pre.instantiate_async(&mut store).await?;
+                let config= match server.hayride_http_config().call_get(store).await? {
+                    Ok(c) => {
+                        log::info!("server config: {:?}", c);
+                        c
                     }
-                    None => {
-                        log::warn!("No Config Found");
+                    Err(e) => {
+                        log::error!("failed to get server config: {:?}", e);
+                        return Err(anyhow::Error::msg("failed to get server config"));
                     }
-                }
-                log::debug!("starting server with address: {}", address);
+                };
+
+                log::debug!("starting server with address: {}", config.address);
 
                 // Prepare our server state and start listening for connections.
                 let server = Arc::new(Server::new(
@@ -608,7 +553,7 @@ impl WasmtimeEngine {
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
                 ));
-                let listener = TcpListener::bind(address).await?;
+                let listener = TcpListener::bind(config.address).await?;
 
                 // Start long running process
                 loop {
@@ -616,6 +561,9 @@ impl WasmtimeEngine {
                     log::debug!("accepted client from: {}", addr);
 
                     let server = server.clone();
+
+                    // TODO: Set configured read/write timeouts and header limit
+
                     tokio::task::spawn(async move {
                         if let Err(e) = http1::Builder::new()
                             .keep_alive(true)
@@ -629,7 +577,7 @@ impl WasmtimeEngine {
                             .with_upgrades()
                             .await
                         {
-                            eprintln!("server error: {}", e);
+                            log::error!("server error: {}", e);
                         }
                     });
                 }
