@@ -41,6 +41,7 @@ pub struct EngineBuilder {
     model_path: Option<String>,
     log_level: String,
     inherit_stdio: bool,
+    envs: Vec<(String, String)>,
 
     core_enabled: bool,
     ai_enabled: bool,
@@ -59,6 +60,7 @@ impl EngineBuilder {
             model_path: None,
             log_level: "info".to_string(),
             inherit_stdio: false,
+            envs: vec![],
 
             core_enabled: true,
             ai_enabled: false,
@@ -95,6 +97,11 @@ impl EngineBuilder {
 
     pub fn inherit_stdio(mut self, inherit_stdio: bool) -> Self {
         self.inherit_stdio = inherit_stdio;
+        self
+    }
+
+    pub fn envs(mut self, envs: Vec<(String, String)>) -> Self {
+        self.envs = envs;
         self
     }
 
@@ -153,6 +160,7 @@ impl EngineBuilder {
             model_path: self.model_path,
             log_level: self.log_level,
             inherit_stdio: self.inherit_stdio,
+            envs: self.envs,
             core_enabled: self.core_enabled,
             ai_enabled: self.ai_enabled,
             silo_enabled: self.silo_enabled,
@@ -173,6 +181,7 @@ pub struct WasmtimeEngine {
     log_level: String,
 
     inherit_stdio: bool,
+    envs: Vec<(String, String)>,
 
     core_enabled: bool,
     ai_enabled: bool,
@@ -203,7 +212,7 @@ impl WasmtimeEngine {
             outdir = None;
         }
 
-        let wasi_ctx = create_wasi_ctx(args, outdir, self.id, stdin)?;
+        let wasi_ctx = create_wasi_ctx(args, outdir, self.id, stdin, &self.envs)?;
         let store = wasmtime::Store::new(
             &self.engine,
             Host {
@@ -531,7 +540,7 @@ impl WasmtimeEngine {
                 let server = pre.instantiate_async(&mut store).await?;
                 let config = match server.hayride_http_config().call_get(store).await? {
                     Ok(c) => {
-                        log::info!("server config: {:?}", c);
+                        log::debug!("server config: {:?}", c);
                         c
                     }
                     Err(e) => {
@@ -540,7 +549,12 @@ impl WasmtimeEngine {
                     }
                 };
 
-                log::debug!("starting server with address: {}", config.address);
+                let url = Url::parse(&config.address)?;
+                let port = url.port_or_known_default().unwrap_or(80);
+                let address =
+                    url.host_str().unwrap_or(&config.address).to_string() + ":" + &port.to_string();
+
+                log::debug!("starting server with address: {}", address);
 
                 // Prepare our server state and start listening for connections.
                 let server = Arc::new(Server::new(
@@ -553,7 +567,7 @@ impl WasmtimeEngine {
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
                 ));
-                let listener = TcpListener::bind(config.address).await?;
+                let listener = TcpListener::bind(address).await?;
 
                 // Start long running process
                 loop {

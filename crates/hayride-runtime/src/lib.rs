@@ -95,6 +95,7 @@ fn create_wasi_ctx(
     out_dir: Option<String>,
     id: Uuid,
     stdin: bool,
+    envs: &[(impl AsRef<str>, impl AsRef<str>)],
 ) -> wasmtime::Result<WasiCtx> {
     let home_dir =
         dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
@@ -110,6 +111,7 @@ fn create_wasi_ctx(
         .inherit_stdio() // Default inherit stdout
         .env("PWD", ".") // Set the current working directory
         .env("HOME", home_dir.to_string_lossy())
+        .envs(envs) // append custom envs
         .preopened_dir(
             ".",
             ".",
