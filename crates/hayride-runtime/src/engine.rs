@@ -23,7 +23,6 @@ use wasmtime_wasi_http::io::TokioIo;
 use wasmtime_wasi_http::WasiHttpCtx;
 
 use hyper::server::conn::http1;
-use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::Path;
 use std::sync::Arc;
@@ -334,9 +333,6 @@ impl WasmtimeEngine {
         let wit_parsed = WitParser::new(bytes)?;
         let linker = self.link_imports(wit_parsed.clone())?;
 
-        // Parse options from the first arg
-        let options = parse_key_value_options(args);
-
         // Default assume that a component is a reactor unless we find a handle or run function
         let mut component_type: ComponentType = ComponentType::Reactor;
         wit_parsed.function_exports().iter().for_each(|f| {
@@ -624,17 +620,12 @@ impl WasmtimeEngine {
                             })
                             .ok_or_else(|| anyhow::anyhow!("AI feature not found in Config"))?;
 
-                        // Check if address is set in options
-                        if let Some(addr) = options.get("address") {
-                            address = addr.to_string();
-                        } else {
-                            // Otherwise, use config value
-                            let url = Url::parse(&ai_feature.websocket.address)?;
-                            let port = url.port_or_known_default().unwrap_or(80);
-                            address = url.host_str().unwrap_or(&address).to_string()
-                                + ":"
-                                + &port.to_string();
-                        }
+                        // use config value
+                        let url = Url::parse(&ai_feature.websocket.address)?;
+                        let port = url.port_or_known_default().unwrap_or(80);
+                        address = url.host_str().unwrap_or(&address).to_string()
+                            + ":"
+                            + &port.to_string();
 
                         // Overwrite the log level if config sets
                         hayride_utils::log::init_logger(ai_feature.logging.level.clone())?;
@@ -686,21 +677,6 @@ impl WasmtimeEngine {
             }
         }
     }
-}
-
-pub fn parse_key_value_options(args: &[impl AsRef<str> + Sync]) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-
-    if let Some(first) = args.get(0) {
-        let first_str = first.as_ref();
-        for pair in first_str.split_whitespace() {
-            if let Some((key, value)) = pair.split_once('=') {
-                map.insert(key.to_string(), value.to_string());
-            }
-        }
-    }
-
-    map
 }
 
 // Lookup the exported function from the component
