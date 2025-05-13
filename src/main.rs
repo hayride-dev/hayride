@@ -31,6 +31,7 @@ async fn main() -> Result<()> {
 
     let bin_path = env::var("HAYRIDE_BIN").unwrap_or("hayride-core:cli".to_string());
     let entrypoint = env::var("HAYRIDE_ENTRYPOINT").unwrap_or("run".to_string());
+    let log_level = env::var("HAYRIDE_LOG_LEVEL").unwrap_or("info".to_string());
 
     // Output directory
     let mut out_dir = home_dir.clone();
@@ -51,6 +52,7 @@ async fn main() -> Result<()> {
         hayride_core::CoreBackend::new(None),
         morphs_dir.clone(),
     )
+    .log_level(log_level)
     .out_dir(Some(out_dir)) // outdir set in context for spawned components
     .inherit_stdio(true) // Inherit stdio for the cli component
     .model_path(Some(model_dir))

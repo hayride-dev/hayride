@@ -546,7 +546,7 @@ impl WasmtimeEngine {
                                 _ => {}
                             });
 
-                        let (log_level, url) = if ai {
+                        let url = if ai {
                             let ai_feature = c
                                 .features
                                 .iter()
@@ -559,10 +559,7 @@ impl WasmtimeEngine {
                                 })
                                 .ok_or_else(|| anyhow::anyhow!("AI feature not found in Config"))?;
 
-                            (
-                                ai_feature.logging.level.clone(),
-                                Url::parse(&ai_feature.http.address)?,
-                            )
+                                Url::parse(&ai_feature.http.address)?
                         } else {
                             let server_morph = c
                                 .core
@@ -578,10 +575,7 @@ impl WasmtimeEngine {
                                     anyhow::anyhow!("Server morph not found in Config")
                                 })?;
 
-                            (
-                                server_morph.logging.level.clone(),
-                                Url::parse(&server_morph.http.address)?,
-                            )
+                                Url::parse(&server_morph.http.address)?
                         };
 
                         // Check if address is set in options
@@ -595,8 +589,6 @@ impl WasmtimeEngine {
                                 + &port.to_string();
                         }
 
-                        // Overwrite the log level if config sets
-                        hayride_utils::log::init_logger(log_level)?;
                         log::debug!("config: {:?}", c);
                     }
                     None => {
