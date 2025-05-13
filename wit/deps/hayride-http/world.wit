@@ -1,4 +1,26 @@
-package hayride:http@0.0.47;
+package hayride:http@0.0.48;
+
+interface config {
+    record server {
+        address: string,
+        read-timeout: u32,
+        write-timeout: u32,
+        max-header-bytes: u32,
+    }
+
+    enum error-code {
+        invalid,
+        not-found,
+        unknown
+    }
+
+    resource error {
+        code: func() -> error-code;
+        data: func() -> string;
+    }
+
+    get: func() -> result<server, error>;
+}
 
 world client {
     import wasi:http/types@0.2.0;
@@ -8,6 +30,8 @@ world client {
 world server {
     import wasi:http/types@0.2.0;
     export wasi:http/incoming-handler@0.2.0;
+
+    export config;
 }
 
 world client-server {
