@@ -545,10 +545,20 @@ impl WasmtimeEngine {
                     }
                 };
 
-                let url = Url::parse(&config.address)?;
+                // Ensure the input has a scheme
+                let address_with_scheme = if config.address.contains("://") {
+                    config.address.clone()
+                } else {
+                    format!("http://{}", config.address)
+                };
+
+                let url = Url::parse(&address_with_scheme)
+                    .map_err(|e| anyhow::anyhow!("Failed to parse URL: {}", e))?;
+
+                // Parse url or use default values
+                let host = url.host_str().unwrap_or("127.0.0.1");
                 let port = url.port_or_known_default().unwrap_or(80);
-                let address =
-                    url.host_str().unwrap_or(&config.address).to_string() + ":" + &port.to_string();
+                let address = format!("{}:{}", host, port);
 
                 log::debug!("starting server with address: {}", address);
 
