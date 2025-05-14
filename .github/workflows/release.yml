@@ -6,45 +6,31 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build:
+  linux-build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
-
     steps:
       - uses: actions/checkout@v4
+      - name: Add Linux targets
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          target: ${{ matrix.target }}
-
-      - name: Install cross
-        run: cargo install cross
-
-      - name: Build with cross
-        run: cross build --release --target ${{ matrix.target }}
+      - name: Build x86_64 Linux binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
 
       - name: Package binary
         run: |
           mkdir -p dist
           BIN=hayride
-          TARGET=${{ matrix.target }}
-
-          OUTFILE="${BIN}-${TARGET}"
-          cp target/$TARGET/release/$BIN $OUTFILE
+          OUTFILE="${BIN}-x86_64-unknown-linux-musl"
+          cp target/x86_64-unknown-linux-musl/release/$BIN $OUTFILE
           chmod +x $OUTFILE
-
           tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: release-binaries-${{ matrix.target }}
-          path: dist/*.tar.xz
+            name: release-binaries-${{ matrix.target }}
+            path: dist/*.tar.xz
 
   macos-build:
     runs-on: macos-latest
@@ -104,12 +90,8 @@ jobs:
       # Download artifacts for each target
       - uses: actions/download-artifact@v4
         with:
-          name: release-binaries-x86_64-unknown-linux-musl
+          name: release-binaries-x86_64-unknown-linux-gnu
           path: temp/linux
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-binaries-aarch64-unknown-linux-musl
-          path: temp/arm
       - uses: actions/download-artifact@v4
         with:
           name: release-binaries-x86_64-apple-darwin
