@@ -2,12 +2,16 @@ use super::silo::ErrNo;
 use crate::silo::bindings::{process, threads};
 use crate::silo::{SiloImpl, SiloView};
 
+use hayride_host_traits::silo::{ThreadStatus, Thread};
+
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use std::fs::{self, File};
 use std::io::Read;
 use std::process::Command;
 use uuid::Uuid;
+
+use wasmtime::component::Resource;
 
 impl<T> process::Host for SiloImpl<T>
 where
@@ -82,6 +86,54 @@ where
     }
 }
 
+impl<T> threads::HostThread for SiloImpl<T>
+where
+    T: SiloView,
+{
+    fn id(&mut self, thread: Resource<Thread>) -> Result<String,threads::ErrNo> {
+        let thread = self.table().get(&thread).map_err(|_| {
+            return ErrNo::ThreadNotFound;
+        })?;
+
+        Ok(thread.id.clone())
+    }
+
+    fn wait(&mut self, thread: Resource<Thread>) -> Result<Vec<u8>,threads::ErrNo> {
+        let thread = self.table().get(&thread).map_err(|_| {
+            return ErrNo::ThreadNotFound;
+        })?;
+
+        let id = Uuid::parse_str(&thread.id.clone()).map_err(|_err| {
+            return ErrNo::InvalidThreadId;
+        })?;
+
+        // Wait for the thread to complete
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Runtime::new()
+                .map_err(|_| ErrNo::EngineError)?
+                .block_on(async {
+                    let _ = self.ctx().wait_for_thread(id).await?;
+
+                    if let Some(out_dir) = &self.ctx().out_dir {
+                        // Read the output file and return the contents as bytes
+                        let output_path =
+                            out_dir.clone() + "/" + &id.to_string() + "/out.txt";
+                        let result = get_file_as_byte_vec(&output_path);
+
+                        return Ok(result);
+                    }
+
+                    return Ok(vec![]);
+                })
+        })
+    }
+
+    fn drop(&mut self, thread: Resource<Thread>) -> wasmtime::Result<()> {
+        self.table().delete(thread)?;
+        Ok(())
+    }
+}
+
 impl<T> threads::Host for SiloImpl<T>
 where
     T: SiloView,
@@ -91,7 +143,7 @@ where
         morph: String,
         function: String,
         args: Vec<String>,
-    ) -> Result<String, threads::ErrNo> {
+    ) -> Result<Resource<Thread>, threads::ErrNo> {
         log::debug!(
             "executing spawn: {} with function: {}, and args: {:?}",
             morph,
@@ -133,8 +185,9 @@ where
         .model_path(model_path)
         .core_enabled(true)
         .ai_enabled(true)
-        .silo_enabled(true)
-        // .wac_enabled(true) // TODO: Should wac be enabled for spawned morphs?
+        // Disable silo for spawned morphs
+        .silo_enabled(false)
+        .wac_enabled(true)
         .wasi_enabled(true)
         .build()
         .map_err(|_err| {
@@ -143,6 +196,15 @@ where
 
         log::debug!("Running engine with id: {}", engine.id);
         let thread_id = engine.id;
+
+        // Create the Thread resource
+        let thread = Thread {
+            id: thread_id.to_string(),
+            pkg: morph,
+            function: function.clone(),
+            args: args.clone(),
+            status: ThreadStatus::Processing,
+        };
 
         let ctx = self.ctx().clone();
         // run engine in a separate thread
@@ -158,47 +220,40 @@ where
         });
 
         // Insert the thread handle into the thread map
-        self.ctx().insert_thread(thread_id, handle);
+        self.ctx().insert_thread(thread_id, handle, thread.clone());
 
-        // Return Thread ID
-        Ok(thread_id.into())
+
+        // Push the thread resource to the table
+        let id = self.table().push(thread).map_err(|_| {
+            return ErrNo::FailedToCreateThreadResource;
+        })?;
+
+        // Return Thread resource ID
+        Ok(id)
     }
 
-    fn wait(&mut self, thread_id: String) -> Result<Vec<u8>, threads::ErrNo> {
+    fn status(&mut self, thread_id: String) -> Result<threads::ThreadMetadata, threads::ErrNo> {
         let id = Uuid::parse_str(&thread_id).map_err(|_err| {
             return ErrNo::InvalidThreadId;
         })?;
 
-        // Wait for the thread to complete
-        tokio::task::block_in_place(|| {
-            tokio::runtime::Runtime::new()
-                .map_err(|_| ErrNo::EngineError)?
-                .block_on(async {
-                    let _ = self.ctx().wait_for_thread(id).await?;
+        // Get the thread metadata
+        let thread = self.ctx().metadata(id)?;
 
-                    if let Some(out_dir) = &self.ctx().out_dir {
-                        // Read the output file and return the contents as bytes
-                        let output_path =
-                            out_dir.clone() + "/" + &thread_id.to_string() + "/out.txt";
-                        let result = get_file_as_byte_vec(&output_path);
+        let metadata = threads::ThreadMetadata {
+            id: thread.id,
+            pkg: thread.pkg,
+            function: thread.function,
+            args: thread.args,
+            status: match thread.status {
+                ThreadStatus::Unknown => threads::ThreadStatus::Unknown,
+                ThreadStatus::Processing => threads::ThreadStatus::Processing,
+                ThreadStatus::Exited => threads::ThreadStatus::Exited,
+                ThreadStatus::Killed => threads::ThreadStatus::Killed,
+            },
+        };
 
-                        return Ok(result);
-                    }
-
-                    return Ok(vec![]);
-                })
-        })
-    }
-
-    fn status(&mut self, thread_id: String) -> Result<bool, threads::ErrNo> {
-        let id = Uuid::parse_str(&thread_id).map_err(|_err| {
-            return ErrNo::InvalidThreadId;
-        })?;
-
-        // Check if the thread is still running
-        let is_running = self.ctx().exists(id);
-
-        Ok(is_running)
+        Ok(metadata)
     }
 
     fn kill(&mut self, thread_id: String) -> Result<(), threads::ErrNo> {
@@ -209,6 +264,30 @@ where
         self.ctx().kill_thread(id)?;
 
         Ok(())
+    }
+
+    fn group(&mut self) -> Result<Vec<threads::ThreadMetadata>, threads::ErrNo> {
+        // Get all threads in the silo
+        let threads = self.ctx().threads();
+
+        // Map the threads to ThreadMetadata
+        let metadata: Vec<threads::ThreadMetadata> = threads
+            .iter()
+            .map(|thread| threads::ThreadMetadata {
+                id: thread.id.clone(),
+                pkg: thread.pkg.clone(),
+                function: thread.function.clone(),
+                args: thread.args.clone(),
+                status: match thread.status {
+                    ThreadStatus::Unknown => threads::ThreadStatus::Unknown,
+                    ThreadStatus::Processing => threads::ThreadStatus::Processing,
+                    ThreadStatus::Exited => threads::ThreadStatus::Exited,
+                    ThreadStatus::Killed => threads::ThreadStatus::Killed,
+                },
+            })
+            .collect();
+
+        Ok(metadata)
     }
 }
 

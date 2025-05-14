@@ -1,11 +1,31 @@
-package hayride:silo@0.0.48;
+package hayride:silo@0.0.49;
 
 interface threads {
     /// system error numbers
     type err-no = u32;
 
-    spawn: func(path: string, function: string, args: list<string>) -> result<string, err-no>;
-    wait: func(thread-id: string) -> result<list<u8>, err-no>;
-    status: func(thread-id: string) -> result<bool, err-no>; // true if running
-    kill: func(thread-id: string) -> result<_, err-no>;
+    enum thread-status {
+        unknown,
+        processing,
+        exited,
+        killed
+    }
+
+    record thread-metadata {
+        id: string,
+        pkg: string,
+        function: string,
+        args: list<string>,
+        status: thread-status
+    }
+
+    resource thread {
+        id: func() -> result<string,err-no>;
+        wait: func() -> result<list<u8>, err-no>;
+    }
+
+    spawn: func(pkg: string, function: string, args: list<string>) -> result<thread, err-no>;
+    status: func(id: string) -> result<thread-metadata, err-no>; // get metadata about a single thread
+    kill: func(id: string) -> result<_, err-no>;
+    group: func() -> result<list<thread-metadata>, err-no>; // list of running threads
 }
