@@ -77,7 +77,7 @@ jobs:
           path: dist/hayride-aarch64-apple-darwin.tar.xz
 
   release:
-    needs: [build, macos-build]
+    needs: [linux-build, macos-build]
     runs-on: ubuntu-latest
     steps:
       - name: Extract version from tag
