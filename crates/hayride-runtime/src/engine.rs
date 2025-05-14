@@ -545,7 +545,14 @@ impl WasmtimeEngine {
                     }
                 };
 
-                let url = Url::parse(&config.address)?;
+                // Ensure the input has a scheme
+                let address_with_scheme = if config.address.starts_with("http://") || config.address.starts_with("https://") {
+                    config.address.clone()
+                } else {
+                    format!("http://{}", config.address)
+                };
+
+                let url = Url::parse(&address_with_scheme)?;
                 let port = url.port_or_known_default().unwrap_or(80);
                 let address =
                     url.host_str().unwrap_or(&config.address).to_string() + ":" + &port.to_string();
