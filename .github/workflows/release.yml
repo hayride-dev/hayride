@@ -14,6 +14,14 @@ jobs:
         run: |
           rustup target add x86_64-unknown-linux-gnu
 
+      - name: Install curl dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl \
+            libcurl4-openssl-dev \
+            gcc-x86-64-linux-gnu \
+            g++-x86-64-linux-gnu
+
       - name: Build x86_64 Linux binary
         run: cargo build --release --target x86_64-unknown-linux-gnu
 
