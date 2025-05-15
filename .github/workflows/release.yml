@@ -21,8 +21,8 @@ jobs:
         run: |
           mkdir -p dist
           BIN=hayride
-          OUTFILE="${BIN}-x86_64-unknown-linux-musl"
-          cp target/x86_64-unknown-linux-musl/release/$BIN $OUTFILE
+          OUTFILE="${BIN}-x86_64-unknown-linux-gnu"
+          cp target/x86_64-unknown-linux-gnu/release/$BIN $OUTFILE
           chmod +x $OUTFILE
           tar -cJvf dist/${OUTFILE}.tar.xz $OUTFILE
 
