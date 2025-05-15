@@ -229,6 +229,7 @@ fn process_compute(
 ) -> Result<String, BackendError> {
     let start = std::time::Instant::now();
     let llama_model = graph.get_model();
+    let llama_vocab = unsafe { hayride_llama_rs_sys::llama_model_get_vocab(llama_model.as_ptr()) };
 
     // Check for options and override defaults if set
     let max_context = 30000;
@@ -289,8 +290,6 @@ fn process_compute(
         hayride_llama_rs_sys::llama_new_context_with_model(llama_model.as_ptr(), context_params)
     };
 
-    let model: &hayride_llama_rs_sys::llama_model = unsafe { llama_model.as_ref() };
-
     // Tokenize the prompt
     let prompt: Vec<u8> = input.data.clone();
     // convert prompt to string
@@ -312,7 +311,7 @@ fn process_compute(
     let c_string = CString::new(prompt_str).map_err(|_| BackendError::FailedTokenization)?;
     let n_prompt = unsafe {
         -hayride_llama_rs_sys::llama_tokenize(
-            llama_model.as_ptr(),
+            llama_vocab,
             c_string.as_ptr(),
             c_int::try_from(c_string.as_bytes().len())
                 .map_err(|_| BackendError::FailedTokenization)?,
@@ -334,7 +333,7 @@ fn process_compute(
 
     let prompt_size = unsafe {
         hayride_llama_rs_sys::llama_tokenize(
-            llama_model.as_ptr(),
+            llama_vocab,
             c_string.as_ptr(),
             c_int::try_from(c_string.as_bytes().len())
                 .map_err(|_| BackendError::FailedTokenization)?,
@@ -447,7 +446,7 @@ fn process_compute(
 
             // is it and end of generation?
             if unsafe {
-                hayride_llama_rs_sys::llama_token_is_eog(llama_model.as_ptr(), new_token_id)
+                hayride_llama_rs_sys::llama_token_is_eog(llama_vocab, new_token_id)
             } {
                 break;
             }
@@ -457,7 +456,7 @@ fn process_compute(
             let len = c_int::try_from(len).expect("length fits into c_int");
             let buf = string.into_raw();
             let n = unsafe {
-                hayride_llama_rs_sys::llama_token_to_piece(model, new_token_id, buf, len, 0, true)
+                hayride_llama_rs_sys::llama_token_to_piece(llama_vocab, new_token_id, buf, len, 0, true)
             };
             if n < 0 {
                 log::warn!("failed to convert token to piece");
