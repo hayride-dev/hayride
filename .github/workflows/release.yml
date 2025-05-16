@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgomp1 curl \
+          sudo apt-get install -y curl \
             libcurl4-openssl-dev \
             gcc-x86-64-linux-gnu \
             g++-x86-64-linux-gnu
