@@ -1,8 +1,14 @@
 use hayride_core::CoreBackend;
+use hayride_host_traits::silo::{Thread, ThreadStatus};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use uuid::Uuid;
 use wasmtime::component::ResourceTable;
+
+pub struct ThreadData {
+    handle: tokio::task::JoinHandle<()>,
+    metadata: Thread,
+}
 
 #[derive(Clone)]
 pub struct SiloCtx {
@@ -15,7 +21,7 @@ pub struct SiloCtx {
     pub core_backend: CoreBackend,
 
     // A concurrent safe map of spawned threads by id.
-    pub threads: Arc<dashmap::DashMap<Uuid, tokio::task::JoinHandle<()>>>,
+    pub threads: Arc<dashmap::DashMap<Uuid, ThreadData>>,
     thread_id: Arc<AtomicI32>,
     pub registry_path: String,
 }
@@ -50,18 +56,28 @@ impl SiloCtx {
         }
     }
 
-    pub fn insert_thread(&self, id: Uuid, handle: tokio::task::JoinHandle<()>) {
-        self.threads.insert(id, handle);
+    pub fn insert_thread(&self, id: Uuid, handle: tokio::task::JoinHandle<()>, metadata: Thread) {
+        self.threads.insert(id, ThreadData { handle, metadata });
     }
 
-    pub fn exists(&self, thread_id: Uuid) -> bool {
-        self.threads.contains_key(&thread_id)
+    pub fn metadata(&self, thread_id: Uuid) -> Result<Thread, ErrNo> {
+        self.threads
+            .get(&thread_id)
+            .map(|data| data.metadata.clone())
+            .ok_or(ErrNo::ThreadNotFound)
+    }
+
+    pub fn threads(&self) -> Vec<Thread> {
+        self.threads
+            .iter()
+            .map(|entry| entry.value().metadata.clone())
+            .collect()
     }
 
     /// Waits for the task with the given ID to complete.
     pub async fn wait_for_thread(&self, thread_id: Uuid) -> Result<(), ErrNo> {
-        if let Some((_, handle)) = self.threads.remove(&thread_id) {
-            match handle.await {
+        if let Some((_, data)) = self.threads.remove(&thread_id) {
+            match data.handle.await {
                 Ok(_) => Ok(()),
                 Err(err) => {
                     log::warn!("thread {} failed: {:?}", thread_id, err);
@@ -76,8 +92,9 @@ impl SiloCtx {
     /// Kills the task with the given ID.
     pub fn kill_thread(&self, thread_id: Uuid) -> Result<(), ErrNo> {
         // Atomically remove the JoinHandle from the map.
-        if let Some((_, handle)) = self.threads.remove(&thread_id) {
-            handle.abort(); // Abort the task.
+        if let Some((_, mut data)) = self.threads.remove(&thread_id) {
+            data.handle.abort(); // Abort the task.
+            data.metadata.status = ThreadStatus::Killed; // NOTE: Status update unused since this is removed from the map.
             log::debug!("thread {} has been aborted", thread_id);
             Ok(())
         } else {
@@ -151,6 +168,7 @@ pub enum ErrNo {
     FailedToCreateLogDir = 8,
     FailedToCreateLogFile = 9,
     FailedToSpawnProcess = 10,
+    FailedToCreateThreadResource = 11,
     Failed,
 }
 

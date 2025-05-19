@@ -55,7 +55,13 @@ impl Server {
         &self,
         req: hyper::Request<hyper::body::Incoming>,
     ) -> Result<hyper::Response<HyperOutgoingBody>> {
-        let wasi_ctx = create_wasi_ctx(&self.args, self.out_dir.clone(), self.id, false, &[] as &[(&str, &str)])?;
+        let wasi_ctx = create_wasi_ctx(
+            &self.args,
+            self.out_dir.clone(),
+            self.id,
+            false,
+            &[] as &[(&str, &str)],
+        )?;
         let mut store: wasmtime::Store<Host> = wasmtime::Store::new(
             &self.pre.engine(),
             Host {
