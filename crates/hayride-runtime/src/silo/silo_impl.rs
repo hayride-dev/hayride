@@ -2,7 +2,7 @@ use super::silo::ErrNo;
 use crate::silo::bindings::{process, threads};
 use crate::silo::{SiloImpl, SiloView};
 
-use hayride_host_traits::silo::{ThreadStatus, Thread};
+use hayride_host_traits::silo::{Thread, ThreadStatus};
 
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
@@ -90,7 +90,7 @@ impl<T> threads::HostThread for SiloImpl<T>
 where
     T: SiloView,
 {
-    fn id(&mut self, thread: Resource<Thread>) -> Result<String,threads::ErrNo> {
+    fn id(&mut self, thread: Resource<Thread>) -> Result<String, threads::ErrNo> {
         let thread = self.table().get(&thread).map_err(|_| {
             return ErrNo::ThreadNotFound;
         })?;
@@ -98,7 +98,7 @@ where
         Ok(thread.id.clone())
     }
 
-    fn wait(&mut self, thread: Resource<Thread>) -> Result<Vec<u8>,threads::ErrNo> {
+    fn wait(&mut self, thread: Resource<Thread>) -> Result<Vec<u8>, threads::ErrNo> {
         let thread = self.table().get(&thread).map_err(|_| {
             return ErrNo::ThreadNotFound;
         })?;
@@ -116,8 +116,7 @@ where
 
                     if let Some(out_dir) = &self.ctx().out_dir {
                         // Read the output file and return the contents as bytes
-                        let output_path =
-                            out_dir.clone() + "/" + &id.to_string() + "/out.txt";
+                        let output_path = out_dir.clone() + "/" + &id.to_string() + "/out.txt";
                         let result = get_file_as_byte_vec(&output_path);
 
                         return Ok(result);
@@ -221,7 +220,6 @@ where
 
         // Insert the thread handle into the thread map
         self.ctx().insert_thread(thread_id, handle, thread.clone());
-
 
         // Push the thread resource to the table
         let id = self.table().push(thread).map_err(|_| {

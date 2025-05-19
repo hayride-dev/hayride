@@ -445,9 +445,7 @@ fn process_compute(
             };
 
             // is it and end of generation?
-            if unsafe {
-                hayride_llama_rs_sys::llama_token_is_eog(llama_vocab, new_token_id)
-            } {
+            if unsafe { hayride_llama_rs_sys::llama_token_is_eog(llama_vocab, new_token_id) } {
                 break;
             }
 
@@ -456,7 +454,14 @@ fn process_compute(
             let len = c_int::try_from(len).expect("length fits into c_int");
             let buf = string.into_raw();
             let n = unsafe {
-                hayride_llama_rs_sys::llama_token_to_piece(llama_vocab, new_token_id, buf, len, 0, true)
+                hayride_llama_rs_sys::llama_token_to_piece(
+                    llama_vocab,
+                    new_token_id,
+                    buf,
+                    len,
+                    0,
+                    true,
+                )
             };
             if n < 0 {
                 log::warn!("failed to convert token to piece");

@@ -1,9 +1,9 @@
 use hayride_core::CoreBackend;
+use hayride_host_traits::silo::{Thread, ThreadStatus};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use uuid::Uuid;
 use wasmtime::component::ResourceTable;
-use hayride_host_traits::silo::{ThreadStatus, Thread};
 
 pub struct ThreadData {
     handle: tokio::task::JoinHandle<()>,
@@ -57,18 +57,14 @@ impl SiloCtx {
     }
 
     pub fn insert_thread(&self, id: Uuid, handle: tokio::task::JoinHandle<()>, metadata: Thread) {
-
-        self.threads.insert(
-            id,
-            ThreadData {
-                handle,
-                metadata,
-            },
-        );
+        self.threads.insert(id, ThreadData { handle, metadata });
     }
 
     pub fn metadata(&self, thread_id: Uuid) -> Result<Thread, ErrNo> {
-        self.threads.get(&thread_id).map(|data| data.metadata.clone()).ok_or(ErrNo::ThreadNotFound)
+        self.threads
+            .get(&thread_id)
+            .map(|data| data.metadata.clone())
+            .ok_or(ErrNo::ThreadNotFound)
     }
 
     pub fn threads(&self) -> Vec<Thread> {
