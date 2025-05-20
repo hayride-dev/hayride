@@ -212,10 +212,12 @@ where
                 log::warn!("error running component: {:?}", e);
             }
 
-            // Kill thread after completion
-            ctx.kill_thread(thread_id).unwrap_or_else(|_| {
-                log::warn!("failed to kill thread after run completed {}", thread_id);
-            });
+            // Update the thread status to Exited
+            ctx.update_status(thread_id, ThreadStatus::Exited)
+                .map_err(|err| {
+                    log::warn!("error updating thread status after exiting: {:?}", err);
+                })
+                .unwrap_or_default();
         });
 
         // Insert the thread handle into the thread map

@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use uuid::Uuid;
 use wasmtime::component::ResourceTable;
+use wasmtime::Result;
 
 pub struct ThreadData {
     handle: tokio::task::JoinHandle<()>,
@@ -99,6 +100,15 @@ impl SiloCtx {
             Ok(())
         } else {
             Err(ErrNo::ThreadNotFound)
+        }
+    }
+
+    pub fn update_status(&self, thread_id: Uuid, status: ThreadStatus) -> Result<()> {
+        if let Some(mut data) = self.threads.get_mut(&thread_id) {
+            data.metadata.status = status;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Thread not found"))
         }
     }
 }
