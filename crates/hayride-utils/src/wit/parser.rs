@@ -43,7 +43,6 @@ fn parse_imports(wit: &wit_parser::Resolve) -> Result<Vec<wit_parser::Package>> 
     wit.worlds.iter().for_each(|w| {
         // Look at what imports this component expects
         w.1.imports.iter().for_each(|e| {
-            // println!("Export: {:?}", e);
             // If WorldItem is an interface lookup interface
             match e.1 {
                 wit_parser::WorldItem::Interface { id, .. } => {
@@ -54,18 +53,17 @@ fn parse_imports(wit: &wit_parser::Resolve) -> Result<Vec<wit_parser::Package>> 
                             // Check which packages are expected
                             if let Some(id) = i.package {
                                 if let Some(package) = wit.packages.get(id) {
-                                    // println!("Package: {:?}", package);
                                     packages.push(package.clone());
                                 }
                             }
                         }
                         None => {
-                            println!("Skipping non-interface");
+                            log::debug!("parse imports: skipping non-interface");
                         }
                     }
                 }
                 _ => {
-                    println!("Not an Interface");
+                    log::debug!("parse imports: found non-interface");
                 }
             }
         });
@@ -78,10 +76,8 @@ fn parse_function_exports(resolved: &wit_parser::Resolve) -> Result<Vec<Function
     let mut functions: Vec<Function> = Vec::new();
 
     resolved.worlds.iter().for_each(|w| {
-        // println!("World: {:?}", w);
         // First check all exports to see what type of component this is
         w.1.exports.iter().for_each(|e| {
-            // println!("Export: {:?}", e);
             // If WorldItem is an interface lookup interface
             match e.1 {
                 wit_parser::WorldItem::Interface { id, .. } => {
@@ -99,7 +95,7 @@ fn parse_function_exports(resolved: &wit_parser::Resolve) -> Result<Vec<Function
                             });
                         }
                         None => {
-                            println!("Interface Not Found");
+                            log::debug!("parse function exports: failed to find interface");
                         }
                     }
                 }
@@ -111,7 +107,7 @@ fn parse_function_exports(resolved: &wit_parser::Resolve) -> Result<Vec<Function
                     functions.push(f);
                 }
                 _ => {
-                    println!("Not an Interface");
+                    log::debug!("parse function exports: found non-interface");
                 }
             }
         });
