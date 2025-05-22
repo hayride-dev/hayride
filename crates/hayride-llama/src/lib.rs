@@ -488,8 +488,6 @@ fn process_compute(
                 }
             };
 
-            print!("{}", output);
-
             // If Writer set, Write to the buffer, blocking while we write to the stream
             if let Some(ref mut writer) = writer {
                 write_output(writer, &output)?;
