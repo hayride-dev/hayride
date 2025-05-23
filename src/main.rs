@@ -70,12 +70,7 @@ async fn main() -> Result<()> {
     .build()?;
 
     // Parse args to pass to the component
-    let mut args: Vec<String> = env::args().collect();
-
-    // If no args are provided at least set empty for the option arg
-    if args.len() < 1 {
-        args.push("".to_string());
-    }
+    let args: Vec<String> = env::args().collect();
 
     let mut morph_path = home_dir;
     morph_path.push(morphs_dir);

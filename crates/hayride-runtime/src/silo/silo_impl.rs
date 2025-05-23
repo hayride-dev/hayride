@@ -141,7 +141,7 @@ where
         &mut self,
         morph: String,
         function: String,
-        args: Vec<String>,
+        mut args: Vec<String>,
     ) -> Result<Resource<Thread>, threads::ErrNo> {
         log::debug!(
             "executing spawn: {} with function: {}, and args: {:?}",
@@ -149,6 +149,9 @@ where
             function,
             args
         );
+
+        // add the morph as the first argument
+        args.insert(0, morph.clone());
 
         let mut path = dirs::home_dir().ok_or_else(|| ErrNo::MissingHomedir)?;
         path.push(self.ctx().registry_path.clone());
