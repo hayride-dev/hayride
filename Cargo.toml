@@ -5,7 +5,6 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-hayride-core = { workspace = true }
 hayride-runtime = { workspace = true }
 hayride-utils = { workspace = true }
 anyhow = { workspace = true }
@@ -22,7 +21,6 @@ members = [
     "crates/hayride-lancedb",
     "crates/hayride-host-traits",
     "crates/hayride-llama",
-    "crates/hayride-core",
     "crates/hayride-wac",
     "crates/hayride-ui",
 ]
@@ -33,7 +31,6 @@ authors = ["hayride-dev"]
 edition = "2021"
 
 [workspace.dependencies]
-hayride-core = { path = "crates/hayride-core" }
 hayride-utils = { path = "crates/hayride-utils" }
 hayride-runtime = { path = "crates/hayride-runtime" }
 hayride-host-traits = { path = "crates/hayride-host-traits" }

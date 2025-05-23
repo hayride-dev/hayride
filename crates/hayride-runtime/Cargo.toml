@@ -8,7 +8,6 @@ edition.workspace = true
 hayride-host-traits = { workspace = true }
 hayride-utils = { workspace = true }
 
-hayride-core = { workspace = true }
 hayride-llama = { workspace = true, optional = true }
 hayride-lancedb = { workspace = true, optional = true }
 hayride-wac = { workspace = true }

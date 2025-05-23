@@ -1,9 +1,11 @@
-package hayride:ai@0.0.49;
+package hayride:ai@0.0.51;
 
-interface agent {
-    use types.{message};
+interface agents {
+    use types.{message, tool-schema, tool-input, tool-output};
+    use context.{context};
+    use model.{model};
     use wasi:io/streams@0.2.0.{output-stream};
-
+  
     enum error-code {
         invoke-error,
         unknown
@@ -17,8 +19,11 @@ interface agent {
     }
 
     resource agent {
-        constructor();
-        invoke: func(messages: list<message>) -> result<list<message>, error>;
-        invoke-stream: func(messages: list<message>, writer: output-stream) -> result<_,error>;
-    }
+        constructor(name: string, instruction: string, tools: list<tool-schema>);
+        context: func() -> result<list<message>, error>;
+        tool-call: func(tool-input: tool-input) -> result<tool-output, error>;
+    }            
+
+    invoke: func(ctx: context, model: model, agent:agent, input: list<message>) -> result<message, error>;
+    invoke-stream: func(ctx: context, model: model, agent:agent, input: list<message>, output: output-stream) -> result<_, error>;
 }

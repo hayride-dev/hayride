@@ -3,8 +3,6 @@ use crate::bindings::hayride_ws::{HayrideWs, HayrideWsPre};
 use crate::silo::SiloCtx;
 use crate::Host;
 
-use hayride_core::CoreBackend;
-
 use anyhow::bail;
 
 use hyper_tungstenite::tungstenite::Utf8Bytes;
@@ -26,7 +24,6 @@ use tungstenite::Message;
 use uuid::Uuid;
 
 use crate::ai::AiCtx;
-use crate::core::CoreCtx;
 use crate::wac::WacCtx;
 use wasmtime::{component::ResourceTable, Result};
 
@@ -39,7 +36,6 @@ pub struct WebsocketServer {
     id: Uuid,
     out_dir: Option<String>,
     ws_pre: HayrideWsPre<Host>,
-    core_backend: CoreBackend,
     silo_ctx: SiloCtx,
     registry_path: String,
     model_path: Option<String>,
@@ -51,7 +47,6 @@ impl WebsocketServer {
         id: Uuid,
         out_dir: Option<String>,
         ws_pre: HayrideWsPre<Host>,
-        core_backend: CoreBackend,
         silo_ctx: SiloCtx,
         registry_path: String,
         model_path: Option<String>,
@@ -61,7 +56,6 @@ impl WebsocketServer {
             id,
             out_dir,
             ws_pre,
-            core_backend,
             silo_ctx,
             registry_path,
             model_path,
@@ -87,7 +81,6 @@ impl WebsocketServer {
                 Host {
                     ctx: wasi_ctx,
                     http_ctx: WasiHttpCtx::new(),
-                    core_ctx: CoreCtx::new(self.core_backend.clone()),
                     ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone()),
                     silo_ctx: self.silo_ctx.clone(),
                     wac_ctx: WacCtx::new(self.registry_path.clone()),

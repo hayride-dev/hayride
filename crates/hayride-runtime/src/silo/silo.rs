@@ -1,4 +1,3 @@
-use hayride_core::CoreBackend;
 use hayride_host_traits::silo::{Thread, ThreadStatus};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
@@ -18,9 +17,6 @@ pub struct SiloCtx {
 
     pub model_path: Option<String>,
 
-    // The core backend for the runtime to provide for each engine.
-    pub core_backend: CoreBackend,
-
     // A concurrent safe map of spawned threads by id.
     pub threads: Arc<dashmap::DashMap<Uuid, ThreadData>>,
     thread_id: Arc<AtomicI32>,
@@ -30,7 +26,6 @@ pub struct SiloCtx {
 impl SiloCtx {
     pub fn new(
         out_dir: Option<String>,
-        core_backend: CoreBackend,
         registry_path: String,
         model_path: Option<String>,
     ) -> Self {
@@ -38,7 +33,6 @@ impl SiloCtx {
         Self {
             out_dir,
             model_path,
-            core_backend,
             threads: Arc::new(dashmap::DashMap::new()),
             thread_id,
             registry_path: registry_path,

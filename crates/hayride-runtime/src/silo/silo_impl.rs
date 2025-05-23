@@ -165,7 +165,6 @@ where
             return ErrNo::MorphNotFound;
         })?;
 
-        let core_backend = self.ctx().core_backend.clone();
         let out_dir = self.ctx().out_dir.clone();
         let model_path = self.ctx().model_path.clone();
 
@@ -180,12 +179,10 @@ where
         })?;
         let engine = crate::engine::EngineBuilder::new(
             wasmtime_engine,
-            core_backend,
             self.ctx().registry_path.clone(),
         )
         .out_dir(out_dir)
         .model_path(model_path)
-        .core_enabled(true)
         .ai_enabled(true)
         // Disable silo for spawned morphs
         .silo_enabled(false)
