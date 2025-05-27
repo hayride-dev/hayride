@@ -19,7 +19,7 @@ world hayride-ai {
 }
 
 world hayride-api {
-    import hayride:core/api@0.0.51;
+    import hayride:core/ai-api@0.0.51;
 }
 
 world hayride-silo {
