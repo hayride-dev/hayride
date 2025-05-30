@@ -7,7 +7,7 @@ use hayride_host_traits::silo::{Thread, ThreadStatus};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use std::fs::{self, File};
-use std::io::Read;
+use std::io::{Read, Write};
 use std::process::Command;
 use uuid::Uuid;
 
@@ -116,7 +116,7 @@ where
 
                     if let Some(out_dir) = &self.ctx().out_dir {
                         // Read the output file and return the contents as bytes
-                        let output_path = out_dir.clone() + "/" + &id.to_string() + "/out.txt";
+                        let output_path = out_dir.clone() + "/" + &id.to_string() + "/out";
                         let result = get_file_as_byte_vec(&output_path);
 
                         return Ok(result);
@@ -181,7 +181,7 @@ where
             wasmtime_engine,
             self.ctx().registry_path.clone(),
         )
-        .out_dir(out_dir)
+        .out_dir(out_dir.clone())
         .model_path(model_path)
         .ai_enabled(true)
         // Disable silo for spawned morphs
@@ -208,8 +208,39 @@ where
         let ctx = self.ctx().clone();
         // run engine in a separate thread
         let handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
-            if let Err(e) = engine.run(path, function, &args).await {
-                log::warn!("error running component: {:?}", e);
+            match engine
+                .run(path.clone(), function.clone(), &args.clone())
+                .await
+            {
+                Ok(result) => {
+                    // If out_dir is set, write a result file
+                    if let Some(out_dir) = &out_dir {
+                        // Create the output directory if it doesn't exist
+                        let output_path =
+                            out_dir.clone() + "/" + &thread_id.to_string() + "/result";
+                        match File::create(output_path) {
+                            Ok(mut file) => {
+                                // Write the result to the file
+                                if let Err(e) = file.write_all(&result) {
+                                    log::warn!("Failed to write to output file: {:?}", e);
+                                }
+                            }
+                            Err(e) => {
+                                log::warn!("Failed to create output file: {:?}", e);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    // If the engine fails, log the error
+                    log::warn!(
+                        "error running component {:?} with function: {:?} and args: {:?}: {:?}",
+                        path,
+                        function,
+                        args,
+                        e
+                    );
+                }
             }
 
             // Update the thread status to Exited
