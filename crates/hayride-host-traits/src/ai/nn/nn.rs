@@ -59,7 +59,7 @@ impl std::ops::Deref for Graph {
 }
 
 /// A host-side tensor.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Tensor {
     pub dimensions: Vec<u32>,
     pub ty: TensorType,
