@@ -140,9 +140,9 @@ impl EngineBuilder {
                 // Create dir if it does not exist
                 fs::create_dir_all(&base_dir)?;
 
-                let output_path = base_dir.join("out.txt");
-                let error_path = base_dir.join("err.txt");
-                let input_path = base_dir.join("in.txt");
+                let output_path = base_dir.join("out");
+                let error_path = base_dir.join("err");
+                let input_path = base_dir.join("in");
 
                 File::create(output_path.clone())?;
                 File::create(error_path.clone())?;

@@ -126,8 +126,8 @@ fn create_wasi_ctx(
         )?;
 
     if let Some(out_dir) = out_dir {
-        let output_path = out_dir.clone() + "/" + &id.to_string() + "/out.txt";
-        let error_path = out_dir.clone() + "/" + &id.to_string() + "/err.txt";
+        let output_path = out_dir.clone() + "/" + &id.to_string() + "/out";
+        let error_path = out_dir.clone() + "/" + &id.to_string() + "/err";
 
         // Create the dir if it doesn't exist
         std::fs::create_dir_all(out_dir.clone() + "/" + &id.to_string())
@@ -162,7 +162,7 @@ fn create_wasi_ctx(
         wasi_ctx_builder = wasi_ctx_builder.stderr(error_file);
 
         if stdin {
-            let input_path = out_dir.clone() + "/" + &id.to_string() + "/in.txt";
+            let input_path = out_dir.clone() + "/" + &id.to_string() + "/in";
             // Create the input file to be used for stdin
             let _in_file = std::fs::OpenOptions::new()
                 .create(true)
