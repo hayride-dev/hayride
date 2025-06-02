@@ -1,4 +1,4 @@
-package hayride:silo@0.0.51;
+package hayride:silo@0.0.53;
 
 interface threads {
     /// system error numbers
@@ -16,6 +16,7 @@ interface threads {
         pkg: string,
         function: string,
         args: list<string>,
+        output: list<u8>,
         status: thread-status
     }
 

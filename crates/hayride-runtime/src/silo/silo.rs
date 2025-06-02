@@ -5,8 +5,10 @@ use uuid::Uuid;
 use wasmtime::component::ResourceTable;
 use wasmtime::Result;
 
+use tokio::task::JoinHandle;
+
 pub struct ThreadData {
-    handle: tokio::task::JoinHandle<()>,
+    handle: Option<JoinHandle<()>>,
     metadata: Thread,
 }
 
@@ -51,7 +53,7 @@ impl SiloCtx {
         }
     }
 
-    pub fn insert_thread(&self, id: Uuid, handle: tokio::task::JoinHandle<()>, metadata: Thread) {
+    pub fn insert_thread(&self, id: Uuid, handle: Option<JoinHandle<()>>, metadata: Thread) {
         self.threads.insert(id, ThreadData { handle, metadata });
     }
 
@@ -71,27 +73,37 @@ impl SiloCtx {
 
     /// Waits for the task with the given ID to complete.
     pub async fn wait_for_thread(&self, thread_id: Uuid) -> Result<(), ErrNo> {
-        if let Some((_, data)) = self.threads.remove(&thread_id) {
-            match data.handle.await {
-                Ok(_) => Ok(()),
-                Err(err) => {
-                    log::warn!("thread {} failed: {:?}", thread_id, err);
-                    return Err(ErrNo::ThreadFailed);
+        if let Some(mut entry) = self.threads.get_mut(&thread_id) {
+            // Take the handle out so we can await it
+            if let Some(handle) = entry.handle.take() {
+                match handle.await {
+                    Ok(_) => Ok(()),
+                    Err(err) => {
+                        log::warn!("thread {} failed: {:?}", thread_id, err);
+                        Err(ErrNo::ThreadFailed)
+                    }
                 }
+            } else {
+                log::warn!("thread {} already awaited or never started", thread_id);
+                Err(ErrNo::ThreadNotFound)
             }
         } else {
-            return Err(ErrNo::ThreadNotFound);
+            Err(ErrNo::ThreadNotFound)
         }
     }
 
     /// Kills the task with the given ID.
     pub fn kill_thread(&self, thread_id: Uuid) -> Result<(), ErrNo> {
-        // Atomically remove the JoinHandle from the map.
-        if let Some((_, mut data)) = self.threads.remove(&thread_id) {
-            data.handle.abort(); // Abort the task.
-            data.metadata.status = ThreadStatus::Killed; // NOTE: Status update unused since this is removed from the map.
-            log::debug!("thread {} has been aborted", thread_id);
-            Ok(())
+        if let Some(mut data) = self.threads.get_mut(&thread_id) {
+            if let Some(handle) = data.handle.take() {
+                handle.abort(); // Correctly call abort on the JoinHandle.
+                data.metadata.status = ThreadStatus::Killed; // Update the status to Killed.
+                log::debug!("thread {} has been aborted", thread_id);
+                Ok(())
+            } else {
+                log::warn!("thread {} has no active handle to abort", thread_id);
+                Err(ErrNo::ThreadNotFound)
+            }
         } else {
             Err(ErrNo::ThreadNotFound)
         }
@@ -100,6 +112,15 @@ impl SiloCtx {
     pub fn update_status(&self, thread_id: Uuid, status: ThreadStatus) -> Result<()> {
         if let Some(mut data) = self.threads.get_mut(&thread_id) {
             data.metadata.status = status;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Thread not found"))
+        }
+    }
+
+    pub fn update_output(&self, thread_id: Uuid, output: Vec<u8>) -> Result<()> {
+        if let Some(mut data) = self.threads.get_mut(&thread_id) {
+            data.metadata.output = output;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Thread not found"))

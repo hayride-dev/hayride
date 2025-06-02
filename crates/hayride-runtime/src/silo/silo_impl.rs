@@ -203,6 +203,7 @@ where
             function: function.clone(),
             args: args.clone(),
             status: ThreadStatus::Processing,
+            output: vec![],
         };
 
         let ctx = self.ctx().clone();
@@ -230,6 +231,14 @@ where
                             }
                         }
                     }
+
+                    ctx.update_output(
+                        thread_id,
+                        result.clone(),
+                    )
+                    .map_err(|err| {
+                        log::warn!("error updating thread output: {:?}", err);
+                    }).unwrap_or_default();
                 }
                 Err(e) => {
                     // If the engine fails, log the error
@@ -252,7 +261,7 @@ where
         });
 
         // Insert the thread handle into the thread map
-        self.ctx().insert_thread(thread_id, handle, thread.clone());
+        self.ctx().insert_thread(thread_id, Some(handle), thread.clone());
 
         // Push the thread resource to the table
         let id = self.table().push(thread).map_err(|_| {
@@ -282,6 +291,7 @@ where
                 ThreadStatus::Exited => threads::ThreadStatus::Exited,
                 ThreadStatus::Killed => threads::ThreadStatus::Killed,
             },
+            output: thread.output,
         };
 
         Ok(metadata)
@@ -315,6 +325,7 @@ where
                     ThreadStatus::Exited => threads::ThreadStatus::Exited,
                     ThreadStatus::Killed => threads::ThreadStatus::Killed,
                 },
+                output: thread.output.clone(),
             })
             .collect();
 

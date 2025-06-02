@@ -14,4 +14,5 @@ pub struct Thread {
     pub function: String,
     pub args: Vec<String>,
     pub status: ThreadStatus,
+    pub output: Vec<u8>,
 }
