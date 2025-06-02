@@ -9,10 +9,6 @@ interface api {
         args: list<string>,
     }
 
-    record sessions {
-        sessions: list<thread-metadata>,
-    }
-
     variant request-data {
         unknown,
         cast(cast),
@@ -21,7 +17,7 @@ interface api {
 
     variant response-data {
         unknown,
-        sessions(thread-metadata),
+        sessions(list<thread-metadata>),
         session-id(string),
         session-status(thread-status),
     }
