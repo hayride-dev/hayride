@@ -41,7 +41,7 @@ hayride-lancedb = { path = "crates/hayride-lancedb" }
 hayride-llama = { path = "crates/hayride-llama" }
 hayride-wac = { path = "crates/hayride-wac" }
 
-hayride-llama-rs-sys = "0.0.3"
+hayride-llama-rs-sys = "0.0.4"
 
 anyhow = "1.0.91"
 async-trait = "0.1.86"
