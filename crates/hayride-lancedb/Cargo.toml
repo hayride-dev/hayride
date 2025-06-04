@@ -12,5 +12,9 @@ arrow-schema = { workspace = true }
 futures = { workspace = true }
 log ={ workspace = true }
 tokio = { workspace = true, features = ["full"] }
-lance = { workspace = true, features = ["protoc"] }
+lance = { workspace = true }
 lancedb = { workspace = true, features = ["sentence-transformers"] }
+
+[target.'cfg(unix)'.dependencies]
+# remove need for external protoc, except on windows
+lance = { workspace = true, features = ["protoc"] }
