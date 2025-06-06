@@ -1,0 +1,81 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <!-- Entry package block -->
+  <Package
+    Name="Hayride"
+    Manufacturer="Kochava"
+    Version="0.0.1"
+    UpgradeCode="d1fc0f78-598d-4aad-8a89-842f082960ee"
+    InstallerVersion="500"
+    Compressed="yes">
+    <FeatureRef Id="MainFeature"/>
+  </Package>
+
+  <!-- Define a directory starting from an environment variable -->
+  <Fragment>
+    <Property Id="USERPROFILE" Value="%USERPROFILE%" />
+  </Fragment>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="UserProfile" Name="." FileSource="[%USERPROFILE%]">
+        <Directory Id="HayrideRoot" Name=".hayride">
+          <Directory Id="BinDir" Name="bin">
+            <Component Id="BinaryFiles" Guid="*">
+              <File Source="hayride.exe" />
+              <File Source="LICENSE.txt" />
+            </Component>
+          </Directory>
+
+          <Component Id="ConfigFile" Guid="*">
+            <File Source="config.yaml" />
+          </Component>
+
+          <Directory Id="RegistryDir" Name="register">
+            <Directory Id="MorphsDir" Name="morphs">
+              <Directory Id="HayrideCoreDir" Name="hayride-core">
+                <Directory Id="CoreVersionDir" Name="0.0.1">
+                  <Component Id="CoreFilesHayrideCore" Guid="*">
+                    <File Source="hayride-core/0.0.1/cli.wasm" />
+                    <File Source="hayride-core/0.0.1/server-cfg.wasm" />
+                    <File Source="hayride-core/0.0.1/ai-server-cfg.wasm" />
+                  </Component>
+                </Directory>
+              </Directory>
+              <Directory Id="HayrideDir" Name="hayride">
+                <Directory Id="HayrideVersionDir" Name="0.0.1">
+                  <Component Id="CoreFilesHayride" Guid="*">
+                    <File Source="hayride/0.0.1/ai-server.wasm" />
+                    <File Source="hayride/0.0.1/inmemory.wasm" />
+                    <File Source="hayride/0.0.1/llama31.wasm" />
+                  </Component>
+                </Directory>
+              </Directory>
+            </Directory>
+          </Directory>
+
+          <Component Id="UpdateUserPath" Guid="*">
+            <RegistryValue Root="HKCU"
+                          Key="Environment"
+                          Name="PATH"
+                          Value="[~PATH];[UserProfile]\.hayride\bin"
+                          Type="expandable"
+                          Action="write"
+                          KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <Feature Id="MainFeature" Title="Hayride Installation" Level="1">
+      <ComponentRef Id="BinaryFiles" />
+      <ComponentRef Id="ConfigFile" />
+      <ComponentRef Id="CoreFilesHayrideCore" />
+      <ComponentRef Id="CoreFilesHayride" />
+      <ComponentRef Id="UpdateUserPath" />
+    </Feature>
+  </Fragment>
+
+</Wix>

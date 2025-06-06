@@ -1,0 +1,17 @@
+<Project Sdk="WixToolset.Sdk/6.0.0">
+
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <Platform>x64</Platform>
+    <WixOutputName>hayride</WixOutputName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="hayride.wxs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ComponentGroupRef Include="HayrideComponents" />
+  </ItemGroup>
+
+</Project>
