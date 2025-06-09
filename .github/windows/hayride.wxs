@@ -17,17 +17,17 @@
   </Fragment>
 
   <Fragment>
-    <Directory Id="TARGETDIR" Name="SourceDir">
+    <StandardDirectory  Id="TARGETDIR" >
       <Directory Id="UserProfile" Name="." FileSource="[%USERPROFILE%]">
         <Directory Id="HayrideRoot" Name=".hayride">
           <Directory Id="BinDir" Name="bin">
-            <Component Id="BinaryFiles" Guid="*">
+            <Component Id="BinaryFiles" Guid="aeb7719f-6fce-4532-ad89-4b0e600e72ad">
               <File Source="hayride.exe" />
               <File Source="LICENSE.txt" />
             </Component>
           </Directory>
 
-          <Component Id="ConfigFile" Guid="*">
+          <Component Id="ConfigFile" Guid="48696a39-1302-460e-af44-19e42c91f7f2">
             <File Source="config.yaml" />
           </Component>
 
@@ -35,7 +35,7 @@
             <Directory Id="MorphsDir" Name="morphs">
               <Directory Id="HayrideCoreDir" Name="hayride-core">
                 <Directory Id="CoreVersionDir" Name="0.0.1">
-                  <Component Id="CoreFilesHayrideCore" Guid="*">
+                  <Component Id="CoreFilesHayrideCore" Guid="29f44402-41fe-48c2-b0fa-0b9af4d91696">
                     <File Source="hayride-core/0.0.1/cli.wasm" />
                     <File Source="hayride-core/0.0.1/server-cfg.wasm" />
                     <File Source="hayride-core/0.0.1/ai-server-cfg.wasm" />
@@ -44,7 +44,7 @@
               </Directory>
               <Directory Id="HayrideDir" Name="hayride">
                 <Directory Id="HayrideVersionDir" Name="0.0.1">
-                  <Component Id="CoreFilesHayride" Guid="*">
+                  <Component Id="CoreFilesHayride" Guid="b779f4d9-2ee9-45a3-8c58-46f5fc2ccb20">
                     <File Source="hayride/0.0.1/ai-server.wasm" />
                     <File Source="hayride/0.0.1/inmemory.wasm" />
                     <File Source="hayride/0.0.1/llama31.wasm" />
@@ -53,19 +53,25 @@
               </Directory>
             </Directory>
           </Directory>
-
-          <Component Id="UpdateUserPath" Guid="*">
-            <RegistryValue Root="HKCU"
-                          Key="Environment"
-                          Name="PATH"
-                          Value="[~PATH];[UserProfile]\.hayride\bin"
-                          Type="expandable"
-                          Action="write"
-                          KeyPath="yes" />
-          </Component>
         </Directory>
       </Directory>
-    </Directory>
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="UpdateUserPath" Guid="0493651e-6a7a-4cea-b2aa-6d9dcd9ad646">
+        <Environment
+          Id="HayrideUserPathUpdate"
+          Name="PATH"
+          Action="set"
+          Part="last"
+          Value="[INSTALLFOLDER]bin"
+          Permanent="no"
+          System="no" />
+        <CreateFolder />
+      </Component>
+    </DirectoryRef>
   </Fragment>
 
   <Fragment>
