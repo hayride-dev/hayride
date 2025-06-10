@@ -5,21 +5,16 @@ use anyhow::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let home_dir =
-        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
-
-    // Get hayride directory from environment variable or use default
-    let hayride_dir: String = env::var("HAYRIDE_DIR").unwrap_or(".hayride".to_string());
-    let morphs_dir: String = format!("{}/registry/morphs", hayride_dir);
-    let model_dir: String = format!("{}/ai/models", hayride_dir);
+    let hayride_dir = hayride_utils::paths::hayride::default_hayride_dir()?;
+    let morphs_dir: String = "registry/morphs".to_string();
+    let model_dir: String = "ai/models".to_string();
 
     // Setup logging
     // The ENV "HAYRIDE_LOG" can be used to set the log file path
     // otherwise fallback to $HOME/.hayride/logs/hayride.log
     let log_file: String = env::var("HAYRIDE_LOG").unwrap_or("hayride.log".to_string());
     // Put log in the hayride logs directory
-    let mut log_dir = home_dir.clone();
-    log_dir.push(hayride_dir.clone());
+    let mut log_dir = hayride_dir.clone();
     log_dir.push("logs");
     log_dir.push(log_file);
     let log_path = log_dir
@@ -34,8 +29,7 @@ async fn main() -> Result<()> {
     let log_level = env::var("HAYRIDE_LOG_LEVEL").unwrap_or("info".to_string());
 
     // Output directory
-    let mut out_dir = home_dir.clone();
-    out_dir.push(hayride_dir.clone());
+    let mut out_dir = hayride_dir.clone();
     out_dir.push("sessions");
     let out_dir = out_dir
         .to_str()
@@ -62,7 +56,6 @@ async fn main() -> Result<()> {
     .wasi_enabled(true)
     .ai_enabled(true)
     .envs(vec![
-        ("HAYRIDE_DIR".to_string(), hayride_dir.clone()),
         ("HAYRIDE_LOG_LEVEL".to_string(), log_level.clone()),
         ("HAYRIDE_BIN".to_string(), bin_path.clone()),
         ("HAYRIDE_ENTRYPOINT".to_string(), entrypoint.clone()),
@@ -72,15 +65,16 @@ async fn main() -> Result<()> {
     // Parse args to pass to the component
     let args: Vec<String> = env::args().collect();
 
-    let mut morph_path = home_dir;
-    morph_path.push(morphs_dir);
+    let mut morph_path = hayride_dir.clone();
+    morph_path.push("registry");
+    morph_path.push("morphs");
     let path_str = morph_path
         .to_str()
         .ok_or(anyhow::anyhow!("Failed to convert path to string"))?
         .to_string();
 
     // TODO: ENV for the cli morph name
-    let wasm_file = hayride_utils::morphs::registry::find_morph_path(path_str, &bin_path)?;
+    let wasm_file = hayride_utils::paths::registry::find_morph_path(path_str, &bin_path)?;
 
     if let Err(e) = engine.run(wasm_file, entrypoint.to_string(), &args).await {
         log::error!("Error running component: {:?}", e);

@@ -101,8 +101,7 @@ where
         let path = match self.ctx().model_path.clone() {
             Some(model_path) => {
                 // Prepend the model path to the name
-                let mut path =
-                    dirs::home_dir().ok_or_else(|| anyhow!("failed to find home directory"))?;
+                let mut path = hayride_utils::paths::hayride::default_hayride_dir()?;
                 path.push(model_path.clone());
                 path.push(name);
                 path.to_str()
@@ -316,8 +315,7 @@ where
         let path = match self.ctx().model_path.clone() {
             Some(model_path) => {
                 // Prepend the model path to the name
-                let mut path =
-                    dirs::home_dir().ok_or_else(|| anyhow!("failed to find home directory"))?;
+                let mut path = hayride_utils::paths::hayride::default_hayride_dir()?;
                 path.push(model_path.clone());
                 path.push(name);
                 path.to_str()

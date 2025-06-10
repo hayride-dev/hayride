@@ -20,8 +20,8 @@ use nix::unistd::Pid;
 use windows_sys::Win32::{
     Foundation::{HANDLE, WAIT_OBJECT_0},
     System::Threading::{
-        OpenProcess, WaitForSingleObject, GetExitCodeProcess, TerminateProcess,
-        PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE, PROCESS_SYNCHRONIZE,
+        GetExitCodeProcess, OpenProcess, TerminateProcess, WaitForSingleObject,
+        PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, PROCESS_TERMINATE,
     },
 };
 
@@ -58,10 +58,9 @@ where
     }
 
     fn kill(&mut self, pid: u32, sig: i32) -> Result<i32, process::ErrNo> {
-        kill_impl(pid,sig)
+        kill_impl(pid, sig)
     }
 }
-
 
 #[cfg(unix)]
 fn wait_impl(pid: u32) -> Result<i32, process::ErrNo> {
@@ -212,9 +211,11 @@ where
         // add the morph as the first argument
         args.insert(0, morph.clone());
 
-        let mut path = dirs::home_dir().ok_or_else(|| ErrNo::MissingHomedir)?;
+        let mut path = hayride_utils::paths::hayride::default_hayride_dir().map_err(|_err| {
+            return ErrNo::MissingHomedir;
+        })?;
         path.push(self.ctx().registry_path.clone());
-        let path = hayride_utils::morphs::registry::find_morph_path(
+        let path = hayride_utils::paths::registry::find_morph_path(
             path.to_str()
                 .ok_or_else(|| ErrNo::FailedToFindRegistry)?
                 .to_string(),
