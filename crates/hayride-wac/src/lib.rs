@@ -25,7 +25,8 @@ impl WacBackend {
 
 impl WacTrait for WacBackend {
     fn compose(&mut self, path: String) -> Result<Vec<u8>, ErrorCode> {
-        let mut registry_path = dirs::home_dir().ok_or_else(|| ErrorCode::ComposeFailed)?;
+        let mut registry_path = hayride_utils::paths::hayride::default_hayride_dir()
+            .map_err(|_| ErrorCode::ComposeFailed)?;
         registry_path.push(self.registry_path.clone());
 
         // TODO: file name as arg, handle errors
@@ -73,7 +74,8 @@ impl WacTrait for WacBackend {
 
     fn plug(&mut self, socket_path: String, plug_paths: Vec<String>) -> Result<Vec<u8>, ErrorCode> {
         // Build registry path from home directory
-        let mut registry_path = dirs::home_dir().ok_or_else(|| ErrorCode::ComposeFailed)?;
+        let mut registry_path = hayride_utils::paths::hayride::default_hayride_dir()
+            .map_err(|_| ErrorCode::ComposeFailed)?;
         registry_path.push(self.registry_path.clone());
         let registry_path = registry_path
             .to_str()
@@ -279,7 +281,7 @@ impl PackageResolver {
 
 fn resolve_morph_path(registry_path: &str, morph_path: &str) -> Result<PathBuf, ErrorCode> {
     // First, check if the morph path is a valid morph path
-    let result = match hayride_utils::morphs::registry::find_morph_path(
+    let result = match hayride_utils::paths::registry::find_morph_path(
         registry_path.to_string(),
         &morph_path,
     ) {

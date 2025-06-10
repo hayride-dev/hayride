@@ -1,3 +1,3 @@
 pub mod log;
-pub mod morphs;
+pub mod paths;
 pub mod wit;

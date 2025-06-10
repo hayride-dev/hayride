@@ -85,9 +85,7 @@ fn create_wasi_ctx(
     stdin: bool,
     envs: &[(impl AsRef<str>, impl AsRef<str>)],
 ) -> wasmtime::Result<WasiCtx> {
-    let home_dir =
-        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
-    let hayride_dir = home_dir.join(".hayride");
+    let hayride_dir = hayride_utils::paths::hayride::default_hayride_dir()?;
     let hayride_dir_str = hayride_dir
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Failed to convert hayride dir to string"))?;
@@ -98,7 +96,6 @@ fn create_wasi_ctx(
         .inherit_stderr()
         .inherit_stdio() // Default inherit stdout
         .env("PWD", ".") // Set the current working directory
-        .env("HOME", home_dir.to_string_lossy())
         .envs(envs) // append custom envs
         .preopened_dir(
             ".",

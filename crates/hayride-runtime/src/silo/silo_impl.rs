@@ -4,14 +4,26 @@ use crate::silo::{SiloImpl, SiloView};
 
 use hayride_host_traits::silo::{Thread, ThreadStatus};
 
-use nix::sys::signal::{kill, Signal};
-use nix::unistd::Pid;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::process::Command;
 use uuid::Uuid;
 
 use wasmtime::component::Resource;
+
+#[cfg(unix)]
+use nix::sys::signal::Signal;
+#[cfg(unix)]
+use nix::unistd::Pid;
+
+#[cfg(windows)]
+use windows_sys::Win32::{
+    Foundation::{HANDLE, WAIT_OBJECT_0},
+    System::Threading::{
+        GetExitCodeProcess, OpenProcess, TerminateProcess, WaitForSingleObject,
+        PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, PROCESS_TERMINATE,
+    },
+};
 
 impl<T> process::Host for SiloImpl<T>
 where
@@ -38,51 +50,97 @@ where
     }
 
     fn wait(&mut self, pid: u32) -> Result<i32, process::ErrNo> {
-        // Wait for process with pid to finish
-        let pid = Pid::from_raw(pid as i32);
-        match nix::sys::wait::waitpid(pid, None) {
-            Ok(status) => {
-                log::debug!(
-                    "process with pid: {:?} finished with status: {:?}",
-                    pid,
-                    status
-                );
-                Ok(pid.as_raw() as i32)
-            }
-            Err(e) => {
-                return Err(e as u32);
-            }
-        }
+        wait_impl(pid)
     }
 
     fn status(&mut self, pid: u32) -> Result<bool, process::ErrNo> {
-        // Check if the process with pid is still running
-        let pid = Pid::from_raw(pid as i32);
-        match kill(pid, None) {
-            Ok(_) => Ok(true),
-            Err(_) => {
-                // Process is not running
-                return Ok(false);
-            }
-        }
+        status_impl(pid)
     }
 
     fn kill(&mut self, pid: u32, sig: i32) -> Result<i32, process::ErrNo> {
-        let pid = Pid::from_raw(pid as i32);
-        // Send the SIGKILL signal to terminate the process
-        let signal = match Signal::try_from(sig) {
-            Ok(s) => s,
-            Err(e) => {
-                return Err(e as u32);
-            }
-        };
+        kill_impl(pid, sig)
+    }
+}
 
-        match kill(pid, signal) {
-            Ok(_) => Ok(pid.as_raw() as i32),
-            Err(e) => {
-                return Err(e as u32);
-            }
+#[cfg(unix)]
+fn wait_impl(pid: u32) -> Result<i32, process::ErrNo> {
+    let pid = Pid::from_raw(pid as i32);
+    match nix::sys::wait::waitpid(pid, None) {
+        Ok(status) => {
+            log::debug!("process {:?} finished: {:?}", pid, status);
+            Ok(pid.as_raw())
         }
+        Err(e) => Err(e as u32),
+    }
+}
+
+#[cfg(unix)]
+fn status_impl(pid: u32) -> Result<bool, process::ErrNo> {
+    let pid = Pid::from_raw(pid as i32);
+    match nix::sys::signal::kill(pid, None) {
+        Ok(_) => Ok(true),
+        Err(_) => Ok(false),
+    }
+}
+
+#[cfg(unix)]
+fn kill_impl(pid: u32, sig: i32) -> Result<i32, process::ErrNo> {
+    let pid = Pid::from_raw(pid as i32);
+    let signal = Signal::try_from(sig).map_err(|e| e as u32)?;
+
+    nix::sys::signal::kill(pid, signal).map_err(|e| e as u32)?;
+
+    Ok(pid.as_raw())
+}
+
+#[cfg(windows)]
+fn wait_impl(pid: u32) -> Result<i32, process::ErrNo> {
+    unsafe {
+        let handle: HANDLE = OpenProcess(PROCESS_SYNCHRONIZE, 0, pid);
+        if handle.is_null() {
+            return Err(1);
+        }
+
+        match WaitForSingleObject(handle, u32::MAX) {
+            WAIT_OBJECT_0 => Ok(pid as i32),
+            _ => Err(2),
+        }
+    }
+}
+
+#[cfg(windows)]
+fn status_impl(pid: u32) -> Result<bool, process::ErrNo> {
+    unsafe {
+        let handle: HANDLE = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if handle.is_null() {
+            return Ok(false); // process likely exited
+        }
+
+        let mut exit_code: u32 = 0;
+        let success = GetExitCodeProcess(handle, &mut exit_code as *mut u32);
+        if success == 0 {
+            return Err(3);
+        }
+
+        // STILL_ACTIVE = 259; means the process is still running
+        Ok(exit_code == 259)
+    }
+}
+
+#[cfg(windows)]
+fn kill_impl(pid: u32, _sig: i32) -> Result<i32, process::ErrNo> {
+    unsafe {
+        let handle: HANDLE = OpenProcess(PROCESS_TERMINATE, 0, pid);
+        if handle.is_null() {
+            return Err(1);
+        }
+
+        let success = TerminateProcess(handle, 1);
+        if success == 0 {
+            return Err(2);
+        }
+
+        Ok(pid as i32)
     }
 }
 
@@ -153,9 +211,11 @@ where
         // add the morph as the first argument
         args.insert(0, morph.clone());
 
-        let mut path = dirs::home_dir().ok_or_else(|| ErrNo::MissingHomedir)?;
+        let mut path = hayride_utils::paths::hayride::default_hayride_dir().map_err(|_err| {
+            return ErrNo::MissingHomedir;
+        })?;
         path.push(self.ctx().registry_path.clone());
-        let path = hayride_utils::morphs::registry::find_morph_path(
+        let path = hayride_utils::paths::registry::find_morph_path(
             path.to_str()
                 .ok_or_else(|| ErrNo::FailedToFindRegistry)?
                 .to_string(),
