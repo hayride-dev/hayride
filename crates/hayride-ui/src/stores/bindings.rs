@@ -12,7 +12,7 @@ mod generated {
 }
 
 pub use self::generated::hayride::ai::types;
-pub use self::generated::hayride::core::api;
+pub use self::generated::hayride::core::ai_api as api;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -79,6 +79,7 @@ pub enum Data {
 impl From<api::Data> for Data {
     fn from(d: api::Data) -> Self {
         match d {
+            api::Data::Unknown => Data::Messages(vec![]),
             api::Data::Messages(msgs) => {
                 Data::Messages(msgs.into_iter().map(|m| m.into()).collect())
             }

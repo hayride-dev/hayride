@@ -1,6 +1,5 @@
 pub mod ai;
 pub mod bindings;
-pub mod core;
 pub mod engine;
 pub mod server;
 pub mod silo;
@@ -8,7 +7,6 @@ pub mod wac;
 pub mod websocket;
 
 use crate::ai::{AiCtx, AiView};
-use crate::core::{CoreCtx, CoreView};
 use crate::silo::{SiloCtx, SiloView};
 use crate::wac::{WacCtx, WacView};
 
@@ -29,7 +27,6 @@ use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 pub struct Host {
     ctx: WasiCtx,
     http_ctx: WasiHttpCtx,
-    core_ctx: CoreCtx,
     ai_ctx: AiCtx,
     silo_ctx: SiloCtx,
     wac_ctx: WacCtx,
@@ -48,15 +45,6 @@ impl WasiView for Host {
 impl WasiHttpView for Host {
     fn ctx(&mut self) -> &mut WasiHttpCtx {
         &mut self.http_ctx
-    }
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.table
-    }
-}
-
-impl CoreView for Host {
-    fn ctx(&mut self) -> &mut CoreCtx {
-        &mut self.core_ctx
     }
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table

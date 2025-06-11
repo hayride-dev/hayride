@@ -3,15 +3,12 @@ use crate::ai::AiCtx;
 use crate::bindings::hayride_cli::HayrideCliPre;
 use crate::bindings::hayride_server::HayrideServerPre;
 use crate::bindings::hayride_ws::HayrideWsPre;
-use crate::core::CoreCtx;
 use crate::server::Server;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
 use crate::websocket::WebsocketServer;
 use crate::Host;
 
-use hayride_core::CoreBackend;
-use hayride_host_traits::core::types::Feature;
 use hayride_utils::wit::parser::WitParser;
 
 use wasmtime::component::types::ComponentItem;
@@ -35,14 +32,12 @@ pub struct EngineBuilder {
     engine: wasmtime::Engine,
     // If out_dir is not set, will inherit stdio for wasmtime execution
     out_dir: Option<String>,
-    core_backend: CoreBackend,
     registry_path: String,
     model_path: Option<String>,
     log_level: String,
     inherit_stdio: bool,
     envs: Vec<(String, String)>,
 
-    core_enabled: bool,
     ai_enabled: bool,
     silo_enabled: bool,
     wac_enabled: bool,
@@ -50,18 +45,16 @@ pub struct EngineBuilder {
 }
 
 impl EngineBuilder {
-    pub fn new(engine: wasmtime::Engine, core_backend: CoreBackend, registry_path: String) -> Self {
+    pub fn new(engine: wasmtime::Engine, registry_path: String) -> Self {
         Self {
             engine,
             out_dir: None,
-            core_backend: core_backend,
             registry_path,
             model_path: None,
             log_level: "info".to_string(),
             inherit_stdio: false,
             envs: vec![],
 
-            core_enabled: true,
             ai_enabled: false,
             silo_enabled: false,
             wac_enabled: false,
@@ -71,11 +64,6 @@ impl EngineBuilder {
 
     pub fn out_dir(mut self, out_dir: Option<String>) -> Self {
         self.out_dir = out_dir;
-        self
-    }
-
-    pub fn core_backend(mut self, core_backend: CoreBackend) -> Self {
-        self.core_backend = core_backend;
         self
     }
 
@@ -101,11 +89,6 @@ impl EngineBuilder {
 
     pub fn envs(mut self, envs: Vec<(String, String)>) -> Self {
         self.envs = envs;
-        self
-    }
-
-    pub fn core_enabled(mut self, core_enabled: bool) -> Self {
-        self.core_enabled = core_enabled;
         self
     }
 
@@ -154,13 +137,11 @@ impl EngineBuilder {
             id: id,
             engine: self.engine,
             out_dir: self.out_dir,
-            core_backend: self.core_backend,
             registry_path: self.registry_path,
             model_path: self.model_path,
             log_level: self.log_level,
             inherit_stdio: self.inherit_stdio,
             envs: self.envs,
-            core_enabled: self.core_enabled,
             ai_enabled: self.ai_enabled,
             silo_enabled: self.silo_enabled,
             wac_enabled: self.wac_enabled,
@@ -174,7 +155,6 @@ pub struct WasmtimeEngine {
     engine: wasmtime::Engine,
     out_dir: Option<String>,
 
-    core_backend: CoreBackend,
     registry_path: String,
     model_path: Option<String>,
     log_level: String,
@@ -182,7 +162,6 @@ pub struct WasmtimeEngine {
     inherit_stdio: bool,
     envs: Vec<(String, String)>,
 
-    core_enabled: bool,
     ai_enabled: bool,
     silo_enabled: bool,
     wac_enabled: bool,
@@ -217,7 +196,6 @@ impl WasmtimeEngine {
             Host {
                 ctx: wasi_ctx,
                 http_ctx: WasiHttpCtx::new(),
-                core_ctx: CoreCtx::new(self.core_backend.clone()),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone()),
                 silo_ctx: silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
@@ -235,7 +213,6 @@ impl WasmtimeEngine {
         let mut linker: Linker<Host> = Linker::<Host>::new(&self.engine);
 
         let mut wasi: bool = false;
-        let mut core: bool = false;
         let mut ai: bool = false;
         let mut silo: bool = false;
         let mut wac: bool = false;
@@ -245,7 +222,6 @@ impl WasmtimeEngine {
                     "silo" => {
                         silo = true;
                     }
-                    "core" => core = true,
                     "ai" => ai = true,
                     "wac" => wac = true,
                     _ => {
@@ -267,7 +243,6 @@ impl WasmtimeEngine {
 
         // Debug
         log::debug!("wasi import enabled: {:?}", wasi);
-        log::debug!("core import enabled: {:?}", core);
         log::debug!("ai import enabled: {:?}", ai);
         log::debug!("silo import enabled: {:?}", silo);
         log::debug!("wac import enabled: {:?}", wac);
@@ -280,14 +255,6 @@ impl WasmtimeEngine {
             wasmtime_wasi::add_to_linker_async(&mut linker)?;
             // TODO: Look for http import separately
             wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker)?;
-        }
-
-        if core {
-            if !self.core_enabled {
-                return Err(anyhow::anyhow!("Core is not enabled").into());
-            }
-
-            crate::core::add_to_linker_sync(&mut linker)?;
         }
 
         if ai {
@@ -357,7 +324,6 @@ impl WasmtimeEngine {
             ComponentType::Cli => {
                 let silo_ctx = SiloCtx::new(
                     self.out_dir.clone(),
-                    self.core_backend.clone(),
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
@@ -377,7 +343,6 @@ impl WasmtimeEngine {
             ComponentType::Reactor => {
                 let silo_ctx = SiloCtx::new(
                     self.out_dir.clone(),
-                    self.core_backend.clone(),
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
@@ -526,7 +491,6 @@ impl WasmtimeEngine {
 
                 let silo_ctx = SiloCtx::new(
                     self.out_dir.clone(),
-                    self.core_backend.clone(),
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
@@ -567,7 +531,6 @@ impl WasmtimeEngine {
                     self.id,
                     self.out_dir.clone(),
                     pre,
-                    self.core_backend.clone(),
                     silo_ctx,
                     self.registry_path.clone(),
                     self.model_path.clone(),
@@ -608,43 +571,12 @@ impl WasmtimeEngine {
 
                 let silo_ctx = SiloCtx::new(
                     self.out_dir.clone(),
-                    self.core_backend.clone(),
                     self.registry_path.clone(),
                     self.model_path.clone(),
                 );
 
-                // Get config from core context
-                let mut address = "127.0.0.1:8080".to_string(); // Default address
-                let config = self.core_backend.get_config();
-                match config {
-                    Some(c) => {
-                        let ai_feature = c
-                            .features
-                            .iter()
-                            .find_map(|f| {
-                                if let Feature::Ai(ai) = f {
-                                    Some(ai)
-                                } else {
-                                    None
-                                }
-                            })
-                            .ok_or_else(|| anyhow::anyhow!("AI feature not found in Config"))?;
-
-                        // use config value
-                        let url = Url::parse(&ai_feature.websocket.address)?;
-                        let port = url.port_or_known_default().unwrap_or(80);
-                        address = url.host_str().unwrap_or(&address).to_string()
-                            + ":"
-                            + &port.to_string();
-
-                        // Overwrite the log level if config sets
-                        hayride_utils::log::init_logger(ai_feature.logging.level.clone())?;
-                        log::debug!("config: {:?}", c);
-                    }
-                    None => {
-                        log::warn!("No Config Found");
-                    }
-                }
+                // TODO: Add instance export for ws config
+                let address = "127.0.0.1:8082".to_string(); // Default address
 
                 log::debug!("starting websocket server with address: {}", address);
 
@@ -653,7 +585,6 @@ impl WasmtimeEngine {
                     self.id,
                     self.out_dir.clone(),
                     ws_pre,
-                    self.core_backend.clone(),
                     silo_ctx,
                     self.registry_path.clone(),
                     self.model_path.clone(),

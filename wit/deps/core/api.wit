@@ -1,19 +1,12 @@
-package hayride:core@0.0.49;
+package hayride:core@0.0.53;
 
 interface api {
+    use hayride:silo/threads@0.0.53.{thread-metadata, thread-status};
+
     record cast {
         name: string,
         function: string,
         args: list<string>,
-    }
-
-    record sessions {
-        // morph name, session id
-        sessions: list<tuple<string, string>>,
-    }
-
-    record session-status {
-        active: bool,
     }
 
     variant request-data {
@@ -24,9 +17,9 @@ interface api {
 
     variant response-data {
         unknown,
-        sessions(sessions),
+        sessions(list<thread-metadata>),
         session-id(string),
-        session-status(session-status),
+        session-status(thread-status),
     }
 
     record request {
@@ -45,7 +38,7 @@ interface api {
 }
 
 interface ai-api {
-    use hayride:ai/types@0.0.49.{message};
+    use hayride:ai/types@0.0.53.{message};
 
     variant data {
         unknown,

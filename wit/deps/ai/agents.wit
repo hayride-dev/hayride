@@ -1,7 +1,11 @@
-package hayride:ai@0.0.49;
+package hayride:ai@0.0.53;
 
-interface agent {
+interface agents {
     use types.{message};
+    use context.{context};
+    use model.{format};
+    use tools.{tools};
+    use inference-stream.{graph-execution-context-stream};
     use wasi:io/streams@0.2.0.{output-stream};
 
     enum error-code {
@@ -17,8 +21,8 @@ interface agent {
     }
 
     resource agent {
-        constructor();
-        invoke: func(messages: list<message>) -> result<list<message>, error>;
-        invoke-stream: func(messages: list<message>, writer: output-stream) -> result<_,error>;
-    }
+        constructor(name: string, instruction: string, tools: tools, context: context, format: format, graph: graph-execution-context-stream);
+        invoke: func(input: message) -> result<message, error>;
+        invoke-stream: func(messages: message, writer: output-stream) -> result<_,error>;
+    }            
 }

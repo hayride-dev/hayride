@@ -43,14 +43,12 @@ async fn main() -> Result<()> {
     )?;
     let engine = EngineBuilder::new(
         wasmtime_engine,
-        hayride_core::CoreBackend::new(None),
         morphs_dir.clone(),
     )
     .log_level(log_level.clone())
     .out_dir(Some(out_dir)) // outdir set in context for spawned components
     .inherit_stdio(true) // Inherit stdio for the cli component
     .model_path(Some(model_dir))
-    .core_enabled(true)
     .silo_enabled(true)
     .wac_enabled(true)
     .wasi_enabled(true)

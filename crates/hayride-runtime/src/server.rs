@@ -4,8 +4,6 @@ use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
 use crate::Host;
 
-use hayride_core::CoreBackend;
-
 use anyhow::bail;
 
 use uuid::Uuid;
@@ -13,7 +11,6 @@ use wasmtime_wasi_http::bindings::http::types::Scheme;
 use wasmtime_wasi_http::{body::HyperOutgoingBody, WasiHttpCtx, WasiHttpView};
 
 use crate::ai::AiCtx;
-use crate::core::CoreCtx;
 use wasmtime::{component::ResourceTable, Result};
 
 pub struct Server {
@@ -21,7 +18,6 @@ pub struct Server {
     out_dir: Option<String>,
 
     pre: HayrideServerPre<Host>,
-    core_backend: CoreBackend,
     silo_ctx: SiloCtx,
     registry_path: String,
     model_path: Option<String>,
@@ -33,7 +29,6 @@ impl Server {
         id: Uuid,
         out_dir: Option<String>,
         pre: HayrideServerPre<Host>,
-        core_backend: CoreBackend,
         silo_ctx: SiloCtx,
         registry_path: String,
         model_path: Option<String>,
@@ -43,7 +38,6 @@ impl Server {
             id,
             out_dir,
             pre,
-            core_backend,
             silo_ctx,
             registry_path,
             model_path,
@@ -67,7 +61,6 @@ impl Server {
             Host {
                 ctx: wasi_ctx,
                 http_ctx: WasiHttpCtx::new(),
-                core_ctx: CoreCtx::new(self.core_backend.clone()),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone()),
                 silo_ctx: self.silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
