@@ -1,5 +1,5 @@
 @echo off
-set "TARGET=%APPDATA%\hayride\models"
+set "TARGET=%APPDATA%\.hayride\ai\models"
 mkdir "%TARGET%" 2>nul
 
 if exist "%TARGET%\Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf" (
