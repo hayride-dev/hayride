@@ -14,6 +14,13 @@
   <Fragment>
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="APPDIR" Name="Hayride">
+        <Component Id="DownloadModelComponent" Guid="c44951ca-28ba-43cb-8dcc-9afc18d2e8a7">
+          <File Id="DownloadModelScript"
+                Name="download_model.bat"
+                Source="download_model.bat"
+                KeyPath="yes" />
+        </Component>
+
         <Component Id="BinaryFiles" Guid="aeb7719f-6fce-4532-ad89-4b0e600e72ad">
           <File Source="hayride.exe" />
           <File Source="LICENSE.txt" />
@@ -85,7 +92,19 @@
       <ComponentRef Id="CoreFilesHayrideCore" />
       <ComponentRef Id="CoreFilesHayride" />
       <ComponentRef Id="UpdateUserPath" />
+      <ComponentRef Id="DownloadModelComponent"/>
     </Feature>
-  </Fragment>
 
+    <!-- Custom Action to download model file -->
+    <CustomAction Id="RunModelDownload"
+                FileRef="DownloadModelScript"
+                Execute="deferred"
+                Impersonate="yes"
+                Return="check"
+                ExeCommand="" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RunModelDownload" After="InstallFiles" Condition="1" />
+    </InstallExecuteSequence>
+  </Fragment>
 </Wix>
