@@ -1,0 +1,26 @@
+
+package hayride:ai@0.0.53;
+
+interface tools {
+    use types.{tool-schema, tool-input, tool-output};
+
+    enum error-code {
+        tool-call-failed,
+        tool-not-found,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    resource tools {
+        constructor(tools: list<tool-schema>);
+        capabilities: func() -> result<list<tool-schema>, error>;
+        call: func(input: tool-input) -> result<tool-output, error-code>;
+    }
+}
+
