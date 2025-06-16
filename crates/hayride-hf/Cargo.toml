@@ -1,0 +1,13 @@
+[package]
+name = "hayride-hf"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true }
+hayride-utils = { workspace = true }
+
+anyhow = { workspace = true }
+log = { workspace = true }
+hf-hub = { workspace = true }

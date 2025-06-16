@@ -1,4 +1,5 @@
-use super::{Backend, Rag};
+use anyhow::Result;
+use super::{Backend, Rag, ModelLoader};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use wasmtime::component::ResourceTable;
@@ -9,13 +10,15 @@ pub struct AiCtx {
     pub backend: Backend,
     pub rag: Rag,
 
+    pub model_loader: ModelLoader,
+
     // An optional model path to load models from
     pub model_path: Option<String>,
     thread_id: Arc<AtomicI32>,
 }
 
 impl AiCtx {
-    pub fn new(out_dir: Option<String>, model_path: Option<String>) -> Self {
+    pub fn new(out_dir: Option<String>, model_path: Option<String>) -> Result<Self> {
         #[cfg(not(feature = "llamacpp"))]
         let backend = Box::new(hayride_host_traits::ai::nn::mock::MockBackend::default());
         #[cfg(feature = "llamacpp")]
@@ -26,14 +29,20 @@ impl AiCtx {
         #[cfg(feature = "lancedb")]
         let rag = Box::new(hayride_lancedb::LanceDBRag::default());
 
+        #[cfg(not(feature = "hf"))]
+        let model_loader = Box::new(hayride_host_traits::ai::model::mock::MockModelLoaderInner::default());
+        #[cfg(feature = "hf")]
+        let model_loader = Box::new(hayride_hf::HuggingFaceModelLoader::new()?);
+
         let thread_id = Arc::new(AtomicI32::new(0));
-        Self {
+        Ok(Self {
             out_dir,
             backend: Backend(backend),
             rag: Rag(rag),
+            model_loader: ModelLoader(model_loader),
             model_path: model_path,
             thread_id,
-        }
+        })
     }
 
     pub fn next_thread_id(&self) -> Option<i32> {

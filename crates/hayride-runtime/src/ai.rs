@@ -10,6 +10,7 @@ pub use bindings::inference::GraphExecutionContext;
 
 use hayride_host_traits::ai::rag::RagInner;
 use hayride_host_traits::ai::BackendInner;
+use hayride_host_traits::ai::model::ModelLoaderInner;
 
 pub fn add_to_linker_sync<T>(l: &mut wasmtime::component::Linker<T>) -> anyhow::Result<()>
 where
@@ -71,6 +72,25 @@ impl std::ops::DerefMut for Rag {
     }
 }
 impl<T: RagInner + 'static> From<T> for Rag {
+    fn from(value: T) -> Self {
+        Self(Box::new(value))
+    }
+}
+
+// Model Loader backend
+pub struct ModelLoader(Box<dyn ModelLoaderInner>);
+impl std::ops::Deref for ModelLoader {
+    type Target = dyn ModelLoaderInner;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+impl std::ops::DerefMut for ModelLoader {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut()
+    }
+}
+impl<T: ModelLoaderInner + 'static> From<T> for ModelLoader {
     fn from(value: T) -> Self {
         Self(Box::new(value))
     }

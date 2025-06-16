@@ -10,6 +10,7 @@ hayride-utils = { workspace = true }
 
 hayride-llama = { workspace = true, optional = true }
 hayride-lancedb = { workspace = true, optional = true }
+hayride-hf = { workspace = true, optional = true }
 hayride-wac = { workspace = true }
 
 anyhow = { workspace = true}
@@ -36,3 +37,4 @@ windows-sys = { workspace = true }
 default = []
 lancedb = ["dep:hayride-lancedb"]
 llamacpp = ["dep:hayride-llama"]
+hf = ["dep:hayride-hf"]
