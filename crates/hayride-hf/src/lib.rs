@@ -19,7 +19,7 @@ impl HuggingFaceModelLoader {
         // Create the custom cache directory if it does not exist
         std::fs::create_dir_all(&custom_cache)?;
 
-        // NOTE: Authentication is not required for public models.
+        // Build the API with the custom cache directory
         let api = ApiBuilder::new().with_cache_dir(custom_cache).build()?;
 
         Ok(HuggingFaceModelLoader {
