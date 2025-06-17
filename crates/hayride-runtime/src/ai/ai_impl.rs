@@ -98,17 +98,15 @@ where
         &mut self,
         name: String,
     ) -> Result<Result<Resource<Graph>, Resource<errors::Error>>> {
-        let path = match self.ctx().model_path.clone() {
-            Some(model_path) => {
-                // Prepend the model path to the name
-                let mut path = hayride_utils::paths::hayride::default_hayride_dir()?;
-                path.push(model_path.clone());
-                path.push(name);
-                path.to_str()
-                    .ok_or_else(|| anyhow!("failed to load model directory"))?
-                    .to_string()
+        let path = match self.ctx().model_loader.load(name.clone()) {
+            Ok(path) => path,
+            Err(error) => {
+                bail!(self, ErrorCode::RuntimeError, anyhow!(
+                    "Failed to load model '{}': {}",
+                    name,
+                    error
+                ));
             }
-            None => name.clone(),
         };
 
         match self.ctx().backend.load(path) {
@@ -312,17 +310,15 @@ where
         &mut self,
         name: String,
     ) -> Result<Result<Resource<GraphStream>, Resource<errors::Error>>> {
-        let path = match self.ctx().model_path.clone() {
-            Some(model_path) => {
-                // Prepend the model path to the name
-                let mut path = hayride_utils::paths::hayride::default_hayride_dir()?;
-                path.push(model_path.clone());
-                path.push(name);
-                path.to_str()
-                    .ok_or_else(|| anyhow!("failed to load model directory"))?
-                    .to_string()
+        let path = match self.ctx().model_loader.load(name.clone()) {
+            Ok(path) => path,
+            Err(error) => {
+                bail!(self, ErrorCode::RuntimeError, anyhow!(
+                    "Failed to load model '{}': {}",
+                    name,
+                    error
+                ));
             }
-            None => name.clone(),
         };
 
         match self.ctx().backend.load(path) {
