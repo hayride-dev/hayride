@@ -1,5 +1,5 @@
 use super::errors::ErrorCode;
 
-pub trait ModelLoaderInner: Send + Sync {
-    fn load(&mut self, name: String) -> Result<String, ErrorCode>;
+pub trait ModelRepositoryInner: Send + Sync {
+    fn download(&mut self, name: String) -> Result<String, ErrorCode>;
 }

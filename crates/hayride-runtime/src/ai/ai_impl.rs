@@ -4,11 +4,12 @@ use super::bindings::graph_stream::GraphStream;
 use super::bindings::inference_stream::TensorStream;
 use super::bindings::{
     errors, graph, graph_stream, inference, inference_stream, rag, tensor, tensor_stream,
-    transformer,
+    transformer, model_repository
 };
 use hayride_host_traits::ai::rag::{
     Connection, Error as RagError, ErrorCode as RagErrorCode, RagOption, Transformer,
 };
+use hayride_host_traits::ai::model::ErrorCode as ModelErrorCode;
 use hayride_host_traits::ai::{Error, ErrorCode, ExecutionContext, Graph, Tensor};
 
 use anyhow::anyhow;
@@ -31,6 +32,17 @@ macro_rules! bail {
 macro_rules! rag_bail {
     ($self:ident, $code:expr, $data:expr) => {
         let e = rag::Error {
+            code: $code,
+            data: $data.into(),
+        };
+        let r = $self.table().push(e)?;
+        return Ok(Err(r));
+    };
+}
+
+macro_rules! model_bail {
+    ($self:ident, $code:expr, $data:expr) => {
+        let e = model_repository::Error {
             code: $code,
             data: $data.into(),
         };
@@ -96,19 +108,8 @@ where
 {
     fn load_by_name(
         &mut self,
-        name: String,
+        path: String,
     ) -> Result<Result<Resource<Graph>, Resource<errors::Error>>> {
-        let path = match self.ctx().model_loader.load(name.clone()) {
-            Ok(path) => path,
-            Err(error) => {
-                bail!(self, ErrorCode::RuntimeError, anyhow!(
-                    "Failed to load model '{}': {}",
-                    name,
-                    error
-                ));
-            }
-        };
-
         match self.ctx().backend.load(path) {
             Ok(graph) => {
                 let id = self.table().push(graph)?;
@@ -308,19 +309,8 @@ where
 {
     fn load_by_name(
         &mut self,
-        name: String,
+        path: String,
     ) -> Result<Result<Resource<GraphStream>, Resource<errors::Error>>> {
-        let path = match self.ctx().model_loader.load(name.clone()) {
-            Ok(path) => path,
-            Err(error) => {
-                bail!(self, ErrorCode::RuntimeError, anyhow!(
-                    "Failed to load model '{}': {}",
-                    name,
-                    error
-                ));
-            }
-        };
-
         match self.ctx().backend.load(path) {
             Ok(graph) => {
                 let id = self.table().push(graph)?;
@@ -603,5 +593,53 @@ where
     fn vector_column(&mut self, transformer: Resource<Transformer>) -> Result<String> {
         let transformer = self.table().get(&transformer)?;
         Ok(transformer.vector_column.clone())
+    }
+}
+
+impl<T> model_repository::Host for AiImpl<T>
+where
+    T: AiView,
+{
+    fn download(
+        &mut self,
+        name: String,
+    ) -> Result<Result<String, Resource<model_repository::Error>>> {
+        match self.ctx().model_repository.download(name.clone()) {
+            Ok(path) => {
+                return Ok(Ok(path));
+            }
+            Err(error) => {
+                model_bail!(self, error, anyhow!(
+                    "Failed to load model '{}'",
+                    name,
+                ));
+            }
+        }
+    }
+}
+
+impl<T> model_repository::HostError for AiImpl<T>
+where
+    T: AiView,
+{
+    fn code(&mut self, error: Resource<model_repository::Error>) -> Result<model_repository::ErrorCode> {
+        let error = self.table().get(&error)?;
+        match error.code {
+            ModelErrorCode::ModelNotFound => Ok(model_repository::ErrorCode::ModelNotFound),
+            ModelErrorCode::InvalidModelName => Ok(model_repository::ErrorCode::InvalidModelName),
+            ModelErrorCode::RuntimeError => Ok(model_repository::ErrorCode::RuntimeError),
+            ModelErrorCode::NotEnabled => Ok(model_repository::ErrorCode::NotEnabled),
+            ModelErrorCode::Unknown => Ok(model_repository::ErrorCode::Unknown),
+        }
+    }
+
+    fn data(&mut self, error: Resource<model_repository::Error>) -> Result<String> {
+        let error = self.table().get(&error)?;
+        return Ok(error.data.to_string());
+    }
+
+    fn drop(&mut self, error: Resource<model_repository::Error>) -> Result<()> {
+        self.table().delete(error)?;
+        return Ok(());
     }
 }

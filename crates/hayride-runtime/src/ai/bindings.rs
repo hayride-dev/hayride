@@ -25,6 +25,7 @@ mod generated {
             "hayride:ai/rag/connection": hayride_host_traits::ai::rag::Connection,
             "hayride:ai/transformer/transformer": hayride_host_traits::ai::rag::Transformer,
             "hayride:ai/rag/error": hayride_host_traits::ai::rag::Error,
+            "hayride:ai/model-repository/error": hayride_host_traits::ai::model::Error,
         },
     });
 }

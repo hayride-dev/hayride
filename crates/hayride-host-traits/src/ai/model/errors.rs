@@ -1,5 +1,12 @@
 use std::fmt;
 
+/// Host side model-loader error.
+#[derive(Debug)]
+pub struct Error {
+    pub code: ErrorCode,
+    pub data: anyhow::Error,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErrorCode {
     ModelNotFound,

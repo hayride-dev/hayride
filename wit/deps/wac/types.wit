@@ -1,4 +1,4 @@
-package hayride:wac@0.0.53;
+package hayride:wac@0.0.54;
 
 interface types {
     enum error-code {

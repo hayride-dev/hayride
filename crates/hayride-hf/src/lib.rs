@@ -3,14 +3,14 @@ use anyhow::Result;
 use hf_hub::api::sync::ApiBuilder;
 
 use hayride_host_traits::ai::model::{
-    ErrorCode, ModelLoaderInner
+    ErrorCode, ModelRepositoryInner
 };
 
-pub struct HuggingFaceModelLoader {
+pub struct HuggingFaceModelRepository {
     api: hf_hub::api::sync::Api,
 }
 
-impl HuggingFaceModelLoader {
+impl HuggingFaceModelRepository {
     pub fn new() -> Result<Self> {
         
         let hayride_dir = hayride_utils::paths::hayride::default_hayride_dir()?;
@@ -22,16 +22,16 @@ impl HuggingFaceModelLoader {
         // Build the API with the custom cache directory
         let api = ApiBuilder::new().with_cache_dir(custom_cache).build()?;
 
-        Ok(HuggingFaceModelLoader {
+        Ok(HuggingFaceModelRepository {
             api: api,
         })
     }
 }
 
-impl ModelLoaderInner for HuggingFaceModelLoader {
-    // Load a model from Hugging Face Hub
+impl ModelRepositoryInner for HuggingFaceModelRepository {
+    // Download a model from Hugging Face Hub
     // The name should be in the format "owner_name/repo_name/model_file"
-    fn load(&mut self, name: String) -> Result<String, ErrorCode> {
+    fn download(&mut self, name: String) -> Result<String, ErrorCode> {
         // Parse the model file from the repo id
         let parts: Vec<&str> = name.split('/').collect();
 

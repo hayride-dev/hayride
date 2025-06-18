@@ -1,11 +1,11 @@
-use super::model::{ModelLoaderInner};
+use super::model::{ModelRepositoryInner};
 use super::errors::ErrorCode;
 
 #[derive(Default)]
-pub struct MockModelLoaderInner {}
+pub struct MockModelRepositoryInner {}
 
-impl ModelLoaderInner for MockModelLoaderInner {
-    fn load(&mut self, _name: String) -> Result<String, ErrorCode> {
+impl ModelRepositoryInner for MockModelRepositoryInner {
+    fn download(&mut self, _name: String) -> Result<String, ErrorCode> {
         return Err(ErrorCode::NotEnabled);
     }
 }

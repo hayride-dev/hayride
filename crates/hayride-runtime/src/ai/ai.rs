@@ -1,5 +1,5 @@
 use anyhow::Result;
-use super::{Backend, Rag, ModelLoader};
+use super::{Backend, Rag, ModelRepository};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use wasmtime::component::ResourceTable;
@@ -10,7 +10,7 @@ pub struct AiCtx {
     pub backend: Backend,
     pub rag: Rag,
 
-    pub model_loader: ModelLoader,
+    pub model_repository: ModelRepository,
 
     // An optional model path to load models from
     pub model_path: Option<String>,
@@ -30,16 +30,16 @@ impl AiCtx {
         let rag = Box::new(hayride_lancedb::LanceDBRag::default());
 
         #[cfg(not(feature = "hf"))]
-        let model_loader = Box::new(hayride_host_traits::ai::model::mock::MockModelLoaderInner::default());
+        let model_repository = Box::new(hayride_host_traits::ai::model::mock::MockModelLoaderInner::default());
         #[cfg(feature = "hf")]
-        let model_loader = Box::new(hayride_hf::HuggingFaceModelLoader::new()?);
+        let model_repository = Box::new(hayride_hf::HuggingFaceModelRepository::new()?);
 
         let thread_id = Arc::new(AtomicI32::new(0));
         Ok(Self {
             out_dir,
             backend: Backend(backend),
             rag: Rag(rag),
-            model_loader: ModelLoader(model_loader),
+            model_repository: ModelRepository(model_repository),
             model_path: model_path,
             thread_id,
         })

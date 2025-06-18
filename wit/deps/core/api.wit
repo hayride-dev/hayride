@@ -1,7 +1,7 @@
-package hayride:core@0.0.53;
+package hayride:core@0.0.54;
 
 interface api {
-    use hayride:silo/threads@0.0.53.{thread-metadata, thread-status};
+    use hayride:silo/threads@0.0.54.{thread-metadata, thread-status};
 
     record cast {
         name: string,
@@ -38,20 +38,26 @@ interface api {
 }
 
 interface ai-api {
-    use hayride:ai/types@0.0.53.{message};
+    use hayride:ai/types@0.0.54.{message};
 
-    variant data {
+    variant request-data {
         unknown,
         messages(list<message>),
     }
 
+    variant response-data {
+        unknown,
+        messages(list<message>),
+        path(string),
+    }
+
     record request {
-        data: data,
+        data: request-data,
         metadata: list<tuple<string, string>>,
     }
 
     record response {
-        data: data,
+        data: response-data,
         error: string,
 
         // Cursor for pagination
