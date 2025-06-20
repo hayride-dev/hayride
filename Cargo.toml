@@ -33,6 +33,7 @@ edition = "2021"
 [workspace.dependencies]
 hayride-utils = { path = "crates/hayride-utils" }
 hayride-runtime = { path = "crates/hayride-runtime" }
+hayride-hf = { path = "crates/hayride-hf" }
 hayride-host-traits = { path = "crates/hayride-host-traits" }
 hayride-lancedb = { path = "crates/hayride-lancedb" }
 hayride-llama = { path = "crates/hayride-llama" }
@@ -70,6 +71,9 @@ wasmtime-wasi = "29.0.1"
 wasmtime-wasi-http = "29.0.1"
 wit-parser = "0.225.0"
 
+# hf deps
+hf-hub = "0.4.3"
+
 # lancedb deps
 arrow-array = "54.1"
 arrow-schema = "54.1"
@@ -99,6 +103,7 @@ wit-bindgen = "0.41.0"
 lance = { version = "0.25.0", features = ["protoc"] }
 
 [features]
-default = ["lancedb", "llamacpp"]
+default = ["lancedb", "llamacpp", "hf"]
 lancedb = ["hayride-runtime/lancedb"]
 llamacpp = ["hayride-runtime/llamacpp"]
+hf = ["hayride-runtime/hf"]

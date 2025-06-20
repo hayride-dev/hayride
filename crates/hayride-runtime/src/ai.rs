@@ -10,6 +10,7 @@ pub use bindings::inference::GraphExecutionContext;
 
 use hayride_host_traits::ai::rag::RagInner;
 use hayride_host_traits::ai::BackendInner;
+use hayride_host_traits::ai::model::ModelRepositoryInner;
 
 pub fn add_to_linker_sync<T>(l: &mut wasmtime::component::Linker<T>) -> anyhow::Result<()>
 where
@@ -25,6 +26,7 @@ where
     bindings::inference_stream::add_to_linker_get_host(l, closure)?;
     bindings::rag::add_to_linker_get_host(l, closure)?;
     bindings::transformer::add_to_linker_get_host(l, closure)?;
+    bindings::model_repository::add_to_linker_get_host(l, closure)?;
 
     Ok(())
 }
@@ -71,6 +73,25 @@ impl std::ops::DerefMut for Rag {
     }
 }
 impl<T: RagInner + 'static> From<T> for Rag {
+    fn from(value: T) -> Self {
+        Self(Box::new(value))
+    }
+}
+
+// ModelRepository backend
+pub struct ModelRepository(Box<dyn ModelRepositoryInner>);
+impl std::ops::Deref for ModelRepository {
+    type Target = dyn ModelRepositoryInner;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+impl std::ops::DerefMut for ModelRepository {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut()
+    }
+}
+impl<T: ModelRepositoryInner + 'static> From<T> for ModelRepository {
     fn from(value: T) -> Self {
         Self(Box::new(value))
     }
