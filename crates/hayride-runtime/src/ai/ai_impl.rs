@@ -3,19 +3,19 @@ use super::bindings::graph::{ExecutionTarget, GraphBuilder, GraphEncoding};
 use super::bindings::graph_stream::GraphStream;
 use super::bindings::inference_stream::TensorStream;
 use super::bindings::{
-    errors, graph, graph_stream, inference, inference_stream, rag, tensor, tensor_stream,
-    transformer, model_repository
+    errors, graph, graph_stream, inference, inference_stream, model_repository, rag, tensor,
+    tensor_stream, transformer,
 };
+use hayride_host_traits::ai::model::ErrorCode as ModelErrorCode;
 use hayride_host_traits::ai::rag::{
     Connection, Error as RagError, ErrorCode as RagErrorCode, RagOption, Transformer,
 };
-use hayride_host_traits::ai::model::ErrorCode as ModelErrorCode;
 use hayride_host_traits::ai::{Error, ErrorCode, ExecutionContext, Graph, Tensor};
 
 use anyhow::anyhow;
 use wasmtime::component::Resource;
 use wasmtime::Result;
-use wasmtime_wasi::HostInputStream;
+use wasmtime_wasi::p2::InputStream;
 
 // Construct an error resource and return it
 macro_rules! bail {
@@ -261,7 +261,7 @@ where
     ) -> Result<Result<tensor_stream::TensorData, tensor_stream::StreamError>> {
         let tensor = self.table().get_mut(&tensor)?;
         let len = len as usize;
-        let data: Result<bytes::Bytes, wasmtime_wasi::StreamError> = tensor.read(len);
+        let data: Result<bytes::Bytes, wasmtime_wasi::p2::StreamError> = tensor.read(len);
 
         let data = data.map(|bytes| bytes.to_vec()).map_err(|_err| {
             // Convert wasmtime_wasi::StreamError to tensor_stream::StreamError
@@ -276,7 +276,7 @@ where
         &mut self,
         tensor: Resource<TensorStream>,
     ) -> wasmtime::Result<Resource<tensor_stream::Pollable>> {
-        wasmtime_wasi::subscribe(self.table(), tensor)
+        wasmtime_wasi::p2::subscribe(self.table(), tensor)
     }
 
     fn dimensions(&mut self, tensor: Resource<TensorStream>) -> Result<tensor::TensorDimensions> {
@@ -609,10 +609,7 @@ where
                 return Ok(Ok(path));
             }
             Err(error) => {
-                model_bail!(self, error, anyhow!(
-                    "Failed to load model '{}'",
-                    name,
-                ));
+                model_bail!(self, error, anyhow!("Failed to load model '{}'", name,));
             }
         }
     }
@@ -622,7 +619,10 @@ impl<T> model_repository::HostError for AiImpl<T>
 where
     T: AiView,
 {
-    fn code(&mut self, error: Resource<model_repository::Error>) -> Result<model_repository::ErrorCode> {
+    fn code(
+        &mut self,
+        error: Resource<model_repository::Error>,
+    ) -> Result<model_repository::ErrorCode> {
         let error = self.table().get(&error)?;
         match error.code {
             ModelErrorCode::ModelNotFound => Ok(model_repository::ErrorCode::ModelNotFound),

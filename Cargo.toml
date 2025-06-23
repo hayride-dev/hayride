@@ -66,9 +66,9 @@ toml = "0.7"
 url = "2.5.4"
 uuid = { version = "1.14.0", features = ["v4"] }
 windows-sys = "0.59.0"
-wasmtime = "29.0.1"
-wasmtime-wasi = "29.0.1"
-wasmtime-wasi-http = "29.0.1"
+wasmtime = "34.0.0"
+wasmtime-wasi = "34.0.0"
+wasmtime-wasi-http = "34.0.0"
 wit-parser = "0.225.0"
 
 # hf deps

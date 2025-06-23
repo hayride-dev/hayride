@@ -7,24 +7,22 @@ pub use wac::{WacImpl, WacView};
 
 use hayride_host_traits::wac::WacTrait;
 
+use wasmtime::component::HasData;
+
 pub fn add_to_linker_sync<T>(l: &mut wasmtime::component::Linker<T>) -> anyhow::Result<()>
 where
     T: WacView,
 {
-    let closure = type_annotate_silo::<T, _>(|t| WacImpl(t));
-    crate::wac::bindings::wac::add_to_linker_get_host(l, closure)?;
-    crate::wac::bindings::types::add_to_linker_get_host(l, closure)?;
+    crate::wac::bindings::wac::add_to_linker::<T, HasWac<T>>(l, |x| WacImpl(x))?;
+    crate::wac::bindings::types::add_to_linker::<T, HasWac<T>>(l, |x| WacImpl(x))?;
 
     Ok(())
 }
 
-// NB: workaround some rustc inference - a future refactoring may make this
-// obsolete.
-fn type_annotate_silo<T, F>(val: F) -> F
-where
-    F: Fn(&mut T) -> WacImpl<&mut T>,
-{
-    val
+struct HasWac<T>(T);
+
+impl<T: 'static> HasData for HasWac<T> {
+    type Data<'a> = WacImpl<&'a mut T>;
 }
 
 pub struct WacBackend(Box<dyn WacTrait>);

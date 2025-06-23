@@ -237,21 +237,19 @@ where
         .map_err(|_err| {
             return ErrNo::EngineError;
         })?;
-        let engine = crate::engine::EngineBuilder::new(
-            wasmtime_engine,
-            self.ctx().registry_path.clone(),
-        )
-        .out_dir(out_dir.clone())
-        .model_path(model_path)
-        .ai_enabled(true)
-        // Disable silo for spawned morphs
-        .silo_enabled(false)
-        .wac_enabled(true)
-        .wasi_enabled(true)
-        .build()
-        .map_err(|_err| {
-            return ErrNo::EngineError;
-        })?;
+        let engine =
+            crate::engine::EngineBuilder::new(wasmtime_engine, self.ctx().registry_path.clone())
+                .out_dir(out_dir.clone())
+                .model_path(model_path)
+                .ai_enabled(true)
+                // Disable silo for spawned morphs
+                .silo_enabled(false)
+                .wac_enabled(true)
+                .wasi_enabled(true)
+                .build()
+                .map_err(|_err| {
+                    return ErrNo::EngineError;
+                })?;
 
         log::debug!("Running engine with id: {}", engine.id);
         let thread_id = engine.id;
@@ -292,13 +290,11 @@ where
                         }
                     }
 
-                    ctx.update_output(
-                        thread_id,
-                        result.clone(),
-                    )
-                    .map_err(|err| {
-                        log::warn!("error updating thread output: {:?}", err);
-                    }).unwrap_or_default();
+                    ctx.update_output(thread_id, result.clone())
+                        .map_err(|err| {
+                            log::warn!("error updating thread output: {:?}", err);
+                        })
+                        .unwrap_or_default();
                 }
                 Err(e) => {
                     // If the engine fails, log the error
@@ -321,7 +317,8 @@ where
         });
 
         // Insert the thread handle into the thread map
-        self.ctx().insert_thread(thread_id, Some(handle), thread.clone());
+        self.ctx()
+            .insert_thread(thread_id, Some(handle), thread.clone());
 
         // Push the thread resource to the table
         let id = self.table().push(thread).map_err(|_| {

@@ -252,7 +252,7 @@ impl WasmtimeEngine {
                 return Err(anyhow::anyhow!("WASI is not enabled").into());
             }
 
-            wasmtime_wasi::add_to_linker_async(&mut linker)?;
+            wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
             // TODO: Look for http import separately
             wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker)?;
         }
@@ -636,16 +636,15 @@ fn get_func_export(
         .component_type()
         .exports(engine)
         .any(|e: (&str, ComponentItem)| {
-            match component.export_index(None, e.0) {
+            match component.get_export_index(None, e.0) {
                 Some(instance_index) => {
                     match e.1 {
                         ComponentItem::ComponentFunc(_f) => {
-                            let export: Option<(ComponentItem, ComponentExportIndex)> =
-                                component.export_index(None, e.0);
+                            let export = component.get_export_index(None, e.0);
                             match export {
                                 Some(i) => {
                                     if e.0 == function {
-                                        func = Some(i.1);
+                                        func = Some(i);
                                         return true;
                                     }
                                 }
@@ -660,12 +659,12 @@ fn get_func_export(
                                 match e.1 {
                                     ComponentItem::ComponentFunc(_f) => {
                                         // Lookup the export index for this function
-                                        let export: Option<(ComponentItem, ComponentExportIndex)> =
-                                            component.export_index(Some(&instance_index.1), e.0);
+                                        let export =
+                                            component.get_export_index(Some(&instance_index), e.0);
                                         match export {
                                             Some(i) => {
                                                 if e.0 == function {
-                                                    func = Some(i.1);
+                                                    func = Some(i);
                                                     return true;
                                                 }
                                             }

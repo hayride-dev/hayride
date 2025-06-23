@@ -41,24 +41,21 @@ async fn main() -> Result<()> {
             .wasm_component_model(true)
             .async_support(true),
     )?;
-    let engine = EngineBuilder::new(
-        wasmtime_engine,
-        morphs_dir.clone(),
-    )
-    .log_level(log_level.clone())
-    .out_dir(Some(out_dir)) // outdir set in context for spawned components
-    .inherit_stdio(true) // Inherit stdio for the cli component
-    .model_path(Some(model_dir))
-    .silo_enabled(true)
-    .wac_enabled(true)
-    .wasi_enabled(true)
-    .ai_enabled(true)
-    .envs(vec![
-        ("HAYRIDE_LOG_LEVEL".to_string(), log_level.clone()),
-        ("HAYRIDE_BIN".to_string(), bin_path.clone()),
-        ("HAYRIDE_ENTRYPOINT".to_string(), entrypoint.clone()),
-    ])
-    .build()?;
+    let engine = EngineBuilder::new(wasmtime_engine, morphs_dir.clone())
+        .log_level(log_level.clone())
+        .out_dir(Some(out_dir)) // outdir set in context for spawned components
+        .inherit_stdio(true) // Inherit stdio for the cli component
+        .model_path(Some(model_dir))
+        .silo_enabled(true)
+        .wac_enabled(true)
+        .wasi_enabled(true)
+        .ai_enabled(true)
+        .envs(vec![
+            ("HAYRIDE_LOG_LEVEL".to_string(), log_level.clone()),
+            ("HAYRIDE_BIN".to_string(), bin_path.clone()),
+            ("HAYRIDE_ENTRYPOINT".to_string(), entrypoint.clone()),
+        ])
+        .build()?;
 
     // Parse args to pass to the component
     let args: Vec<String> = env::args().collect();

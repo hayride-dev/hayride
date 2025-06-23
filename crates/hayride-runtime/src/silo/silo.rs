@@ -26,11 +26,7 @@ pub struct SiloCtx {
 }
 
 impl SiloCtx {
-    pub fn new(
-        out_dir: Option<String>,
-        registry_path: String,
-        model_path: Option<String>,
-    ) -> Self {
+    pub fn new(out_dir: Option<String>, registry_path: String, model_path: Option<String>) -> Self {
         let thread_id = Arc::new(AtomicI32::new(0));
         Self {
             out_dir,
