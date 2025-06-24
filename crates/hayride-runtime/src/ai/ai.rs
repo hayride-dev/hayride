@@ -1,5 +1,5 @@
+use super::{Backend, ModelRepository, Rag};
 use anyhow::Result;
-use super::{Backend, Rag, ModelRepository};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use wasmtime::component::ResourceTable;
@@ -30,7 +30,8 @@ impl AiCtx {
         let rag = Box::new(hayride_lancedb::LanceDBRag::default());
 
         #[cfg(not(feature = "hf"))]
-        let model_repository = Box::new(hayride_host_traits::ai::model::mock::MockModelLoaderInner::default());
+        let model_repository =
+            Box::new(hayride_host_traits::ai::model::mock::MockModelLoaderInner::default());
         #[cfg(feature = "hf")]
         let model_repository = Box::new(hayride_hf::HuggingFaceModelRepository::new()?);
 

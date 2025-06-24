@@ -13,7 +13,7 @@ mod generated {
         trappable_imports: true,
         with: {
             // Upstream package dependencies
-            "wasi:io": wasmtime_wasi::bindings::io,
+            "wasi:io": wasmtime_wasi::p2::bindings::io,
 
             "wasi:nn/tensor/tensor": hayride_host_traits::ai::Tensor,
             "wasi:nn/errors/error": hayride_host_traits::ai::Error,

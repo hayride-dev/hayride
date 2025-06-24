@@ -18,10 +18,10 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use uuid::Uuid;
 use wasmtime::component::ResourceTable;
-use wasmtime_wasi::{
-    HostInputStream, OutputFile, StdinStream, StreamError, StreamResult, WasiCtxBuilder,
+use wasmtime_wasi::p2::{
+    InputStream, IoView, OutputFile, StdinStream, StreamError, StreamResult, WasiCtx,
+    WasiCtxBuilder, WasiView,
 };
-use wasmtime_wasi::{WasiCtx, WasiView};
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 pub struct Host {
@@ -37,15 +37,15 @@ impl WasiView for Host {
     fn ctx(&mut self) -> &mut WasiCtx {
         &mut self.ctx
     }
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.table
-    }
 }
 
 impl WasiHttpView for Host {
     fn ctx(&mut self) -> &mut WasiHttpCtx {
         &mut self.http_ctx
     }
+}
+
+impl IoView for Host {
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
     }
@@ -180,7 +180,7 @@ impl FileStdin {
 }
 
 impl StdinStream for FileStdin {
-    fn stream(&self) -> Box<dyn HostInputStream> {
+    fn stream(&self) -> Box<dyn InputStream> {
         Box::new(FileHostInputStream {
             path: self.path.clone(),
             position: Arc::new(Mutex::new(0)), // Track position across reads
@@ -199,7 +199,7 @@ pub struct FileHostInputStream {
 }
 
 #[async_trait]
-impl wasmtime_wasi::Subscribe for FileHostInputStream {
+impl wasmtime_wasi::p2::Pollable for FileHostInputStream {
     async fn ready(&mut self) {
         let path = self.path.clone();
         let pos = self.position.clone();
@@ -232,7 +232,7 @@ impl wasmtime_wasi::Subscribe for FileHostInputStream {
 }
 
 #[async_trait]
-impl HostInputStream for FileHostInputStream {
+impl InputStream for FileHostInputStream {
     fn read(&mut self, size: usize) -> StreamResult<Bytes> {
         let pos = self.position.clone();
         let path = self.path.clone();

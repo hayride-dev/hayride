@@ -6,8 +6,8 @@ use crate::Host;
 use anyhow::bail;
 
 use hyper_tungstenite::tungstenite::Utf8Bytes;
-use wasmtime_wasi::StreamError;
-use wasmtime_wasi_http::{body::HyperOutgoingBody, WasiHttpCtx, WasiHttpView};
+use wasmtime_wasi::p2::StreamError;
+use wasmtime_wasi_http::{body::HyperOutgoingBody, WasiHttpCtx};
 
 use bytes::{Buf, Bytes};
 use hyper::body::Body;
@@ -126,14 +126,14 @@ where
     let (write, read) = websocket.split();
     let out = WebsocketOutputPipe::new(write);
 
-    let boxed_output: Box<dyn wasmtime_wasi::HostOutputStream> = Box::new(out.clone());
-    let output_arg = store.data_mut().table().push(boxed_output)?;
+    let boxed_output: Box<dyn wasmtime_wasi::p2::OutputStream> = Box::new(out.clone());
+    let output_arg = store.data_mut().table.push(boxed_output)?;
 
     let reader = WebSocketReader::new(read);
     let input = WebsocketInputPipe::new(reader);
 
-    let boxed_input: Box<dyn wasmtime_wasi::HostInputStream> = Box::new(input);
-    let input_arg = store.data_mut().table().push(boxed_input)?;
+    let boxed_input: Box<dyn wasmtime_wasi::p2::InputStream> = Box::new(input);
+    let input_arg = store.data_mut().table.push(boxed_input)?;
 
     if let Err(e) = server
         .hayride_socket_websocket()
@@ -176,7 +176,7 @@ impl WebsocketOutputPipe {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::HostOutputStream for WebsocketOutputPipe {
+impl wasmtime_wasi::p2::OutputStream for WebsocketOutputPipe {
     fn write(&mut self, bytes: Bytes) -> Result<(), StreamError> {
         // Convert Bytes to string
         let data = std::str::from_utf8(&bytes).map_err(|e| {
@@ -208,12 +208,12 @@ impl wasmtime_wasi::HostOutputStream for WebsocketOutputPipe {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::Subscribe for WebsocketOutputPipe {
+impl wasmtime_wasi::p2::Pollable for WebsocketOutputPipe {
     async fn ready(&mut self) {}
 }
 
-impl wasmtime_wasi::StdoutStream for WebsocketOutputPipe {
-    fn stream(&self) -> Box<dyn wasmtime_wasi::HostOutputStream> {
+impl wasmtime_wasi::p2::StdoutStream for WebsocketOutputPipe {
+    fn stream(&self) -> Box<dyn wasmtime_wasi::p2::OutputStream> {
         Box::new(self.clone())
     }
 
@@ -263,8 +263,8 @@ impl WebsocketInputPipe {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::HostInputStream for WebsocketInputPipe {
-    fn read(&mut self, size: usize) -> wasmtime_wasi::StreamResult<Bytes> {
+impl wasmtime_wasi::p2::InputStream for WebsocketInputPipe {
+    fn read(&mut self, size: usize) -> wasmtime_wasi::p2::StreamResult<Bytes> {
         use mpsc::error::TryRecvError;
 
         match self.buffer.take() {
@@ -306,7 +306,7 @@ impl wasmtime_wasi::HostInputStream for WebsocketInputPipe {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::Subscribe for WebsocketInputPipe {
+impl wasmtime_wasi::p2::Pollable for WebsocketInputPipe {
     async fn ready(&mut self) {
         if self.buffer.is_some() || self.closed {
             return;

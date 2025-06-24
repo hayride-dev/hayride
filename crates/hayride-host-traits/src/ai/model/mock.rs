@@ -1,5 +1,5 @@
-use super::model::{ModelRepositoryInner};
 use super::errors::ErrorCode;
+use super::model::ModelRepositoryInner;
 
 #[derive(Default)]
 pub struct MockModelRepositoryInner {}

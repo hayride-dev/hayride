@@ -27,7 +27,7 @@ pub mod hayride_server {
         async: true,
         with: {
             // Upstream package dependencies
-            "wasi:io": wasmtime_wasi::bindings::io,
+            "wasi:io": wasmtime_wasi::p2::bindings::io,
 
             // Configure all WIT http resources to be defined types in this
             // crate to use the `ResourceTable` helper methods.
@@ -58,7 +58,7 @@ pub mod hayride_ws {
         async: true,
         with: {
             // Upstream package dependencies
-            "wasi:io": wasmtime_wasi::bindings::io,
+            "wasi:io": wasmtime_wasi::p2::bindings::io,
         },
     });
 }

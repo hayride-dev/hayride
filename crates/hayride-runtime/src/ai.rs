@@ -8,36 +8,34 @@ pub use ai::{AiImpl, AiView};
 
 pub use bindings::inference::GraphExecutionContext;
 
+use hayride_host_traits::ai::model::ModelRepositoryInner;
 use hayride_host_traits::ai::rag::RagInner;
 use hayride_host_traits::ai::BackendInner;
-use hayride_host_traits::ai::model::ModelRepositoryInner;
+
+use wasmtime::component::HasData;
 
 pub fn add_to_linker_sync<T>(l: &mut wasmtime::component::Linker<T>) -> anyhow::Result<()>
 where
     T: AiView,
 {
-    let closure = type_annotate_ml::<T, _>(|t| AiImpl(t));
-    bindings::tensor::add_to_linker_get_host(l, closure)?;
-    bindings::graph::add_to_linker_get_host(l, closure)?;
-    bindings::inference::add_to_linker_get_host(l, closure)?;
-    bindings::errors::add_to_linker_get_host(l, closure)?;
-    bindings::tensor_stream::add_to_linker_get_host(l, closure)?;
-    bindings::graph_stream::add_to_linker_get_host(l, closure)?;
-    bindings::inference_stream::add_to_linker_get_host(l, closure)?;
-    bindings::rag::add_to_linker_get_host(l, closure)?;
-    bindings::transformer::add_to_linker_get_host(l, closure)?;
-    bindings::model_repository::add_to_linker_get_host(l, closure)?;
+    bindings::tensor::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::graph::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::inference::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::errors::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::tensor_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::graph_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::inference_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::rag::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::transformer::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::model_repository::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
 
     Ok(())
 }
 
-// NB: workaround some rustc inference - a future refactoring may make this
-// obsolete.
-fn type_annotate_ml<T, F>(val: F) -> F
-where
-    F: Fn(&mut T) -> AiImpl<&mut T>,
-{
-    val
+struct HasAi<T>(T);
+
+impl<T: 'static> HasData for HasAi<T> {
+    type Data<'a> = AiImpl<&'a mut T>;
 }
 
 /// A machine learning backend.

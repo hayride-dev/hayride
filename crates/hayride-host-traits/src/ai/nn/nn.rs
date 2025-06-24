@@ -4,7 +4,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use wasmtime_wasi::StreamError;
+use wasmtime_wasi::p2::StreamError;
 
 pub trait BackendInner: Send + Sync {
     fn load(&mut self, name: String) -> Result<Graph, BackendError>;
@@ -128,8 +128,8 @@ impl TensorStream {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::HostInputStream for TensorStream {
-    fn read(&mut self, size: usize) -> wasmtime_wasi::StreamResult<Bytes> {
+impl wasmtime_wasi::p2::InputStream for TensorStream {
+    fn read(&mut self, size: usize) -> wasmtime_wasi::p2::StreamResult<Bytes> {
         use mpsc::error::TryRecvError;
 
         match self.buffer.take() {
@@ -172,7 +172,7 @@ impl wasmtime_wasi::HostInputStream for TensorStream {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::Subscribe for TensorStream {
+impl wasmtime_wasi::p2::Pollable for TensorStream {
     async fn ready(&mut self) {
         if self.buffer.is_some() || self.closed {
             return;
@@ -236,7 +236,7 @@ impl FutureResult {
         }
     }
 
-    pub fn get(&mut self) -> wasmtime_wasi::StreamResult<Bytes> {
+    pub fn get(&mut self) -> wasmtime_wasi::p2::StreamResult<Bytes> {
         use mpsc::error::TryRecvError;
 
         match self.buffer.take() {
@@ -265,7 +265,7 @@ impl FutureResult {
 }
 
 #[async_trait::async_trait]
-impl wasmtime_wasi::Subscribe for FutureResult {
+impl wasmtime_wasi::p2::Pollable for FutureResult {
     async fn ready(&mut self) {
         if self.buffer.is_some() || self.closed {
             return;
