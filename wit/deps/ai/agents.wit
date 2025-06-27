@@ -1,10 +1,11 @@
-package hayride:ai@0.0.55;
+package hayride:ai@0.0.56;
 
 interface agents {
     use types.{message};
     use context.{context};
     use model.{format};
     use tools.{tools};
+    use graph-stream.{graph-stream};
     use inference-stream.{graph-execution-context-stream};
     use wasi:io/streams@0.2.0.{output-stream};
 
@@ -22,7 +23,7 @@ interface agents {
 
     resource agent {
         constructor(name: string, instruction: string, tools: tools, context: context, format: format, graph: graph-execution-context-stream);
-        invoke: func(input: message) -> result<message, error>;
-        invoke-stream: func(messages: message, writer: output-stream) -> result<_,error>;
+        invoke: func(input: message) -> result<list<message>, error>;
+        invoke-stream: func(message: message, writer: output-stream) -> result<_,error>;
     }            
 }

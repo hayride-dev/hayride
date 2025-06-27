@@ -1,4 +1,4 @@
-package hayride:ai@0.0.55;
+package hayride:ai@0.0.56;
 
 interface model {
     use types.{message};
