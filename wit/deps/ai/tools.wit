@@ -1,5 +1,5 @@
 
-package hayride:ai@0.0.55;
+package hayride:ai@0.0.56;
 
 interface tools {
     use types.{tool-schema, tool-input, tool-output};
@@ -18,7 +18,7 @@ interface tools {
     }
 
     resource tools {
-        constructor(tools: list<tool-schema>);
+        constructor();
         capabilities: func() -> result<list<tool-schema>, error>;
         call: func(input: tool-input) -> result<tool-output, error-code>;
     }
