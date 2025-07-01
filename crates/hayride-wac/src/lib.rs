@@ -30,7 +30,7 @@ impl WacTrait for WacBackend {
         registry_path.push(self.registry_path.clone());
 
         let document = Document::parse(&contents).map_err(|e| {
-            log::error!("Failed to parse binary for compose: {}", e);
+            log::error!("Failed to parse wac compose contents: {}", e);
             ErrorCode::ComposeFailed
         })?;
 
