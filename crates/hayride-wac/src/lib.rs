@@ -24,18 +24,13 @@ impl WacBackend {
 }
 
 impl WacTrait for WacBackend {
-    fn compose(&mut self, path: String) -> Result<Vec<u8>, ErrorCode> {
+    fn compose(&mut self, contents: String) -> Result<Vec<u8>, ErrorCode> {
         let mut registry_path = hayride_utils::paths::hayride::default_hayride_dir()
             .map_err(|_| ErrorCode::ComposeFailed)?;
         registry_path.push(self.registry_path.clone());
 
-        // TODO: file name as arg, handle errors
-        let contents = fs::read_to_string(path).map_err(|e| {
-            log::error!("Failed to read file for compose: {}", e);
-            ErrorCode::ComposeFailed
-        })?;
         let document = Document::parse(&contents).map_err(|e| {
-            log::error!("Failed to parse binary for compose: {}", e);
+            log::error!("Failed to parse wac compose contents: {}", e);
             ErrorCode::ComposeFailed
         })?;
 
