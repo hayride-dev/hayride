@@ -14,13 +14,6 @@
   <Fragment>
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="APPDIR" Name="Hayride">
-        <Component Id="DownloadModelComponent" Guid="c44951ca-28ba-43cb-8dcc-9afc18d2e8a7">
-          <File Id="DownloadModelScript"
-                Name="download_model.bat"
-                Source="download_model.bat"
-                KeyPath="yes" />
-        </Component>
-
         <Component Id="BinaryFiles" Guid="aeb7719f-6fce-4532-ad89-4b0e600e72ad">
           <File Source="hayride.exe" />
           <File Source="LICENSE.txt" />
@@ -41,8 +34,9 @@
               <Directory Id="CoreVersionDir" Name="0.0.1">
                 <Component Id="CoreFilesHayrideCore" Guid="29f44402-41fe-48c2-b0fa-0b9af4d91696">
                   <File Source="hayride-core/0.0.1/cli.wasm" />
-                  <File Source="hayride-core/0.0.1/server-cfg.wasm" />
-                  <File Source="hayride-core/0.0.1/ai-server-cfg.wasm" />
+                  <File Source="hayride-core/0.0.1/server.wasm" />
+                  <File Source="hayride-core/0.0.1/cfg.wasm" />
+                  <File Source="hayride-core/0.0.1/ai-server.wasm" />
 
                   <RemoveFolder Id="rmRegistryDir" Directory="RegistryDir" On="uninstall" />
                   <RemoveFolder Id="rmMorphsDir" Directory="MorphsDir" On="uninstall" />
@@ -54,7 +48,8 @@
             <Directory Id="HayrideDir" Name="hayride">
               <Directory Id="HayrideVersionDir" Name="0.0.1">
                 <Component Id="CoreFilesHayride" Guid="b779f4d9-2ee9-45a3-8c58-46f5fc2ccb20">
-                  <File Source="hayride/0.0.1/ai-server.wasm" />
+                  <File Source="hayride/0.0.1/default-agent.wasm" />
+                  <File Source="hayride/0.0.1/default-tools.wasm" />
                   <File Source="hayride/0.0.1/inmemory.wasm" />
                   <File Source="hayride/0.0.1/llama31.wasm" />
 
@@ -92,19 +87,7 @@
       <ComponentRef Id="CoreFilesHayrideCore" />
       <ComponentRef Id="CoreFilesHayride" />
       <ComponentRef Id="UpdateUserPath" />
-      <ComponentRef Id="DownloadModelComponent"/>
     </Feature>
 
-    <!-- Custom Action to download model file -->
-    <CustomAction Id="RunModelDownload"
-                FileRef="DownloadModelScript"
-                Execute="deferred"
-                Impersonate="yes"
-                Return="check"
-                ExeCommand="" />
-
-    <InstallExecuteSequence>
-      <Custom Action="RunModelDownload" After="InstallFiles" Condition="1" />
-    </InstallExecuteSequence>
   </Fragment>
 </Wix>
