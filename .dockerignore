@@ -1,0 +1,4 @@
+target/
+*.gguf
+*.wasm
+*.tar.xz
