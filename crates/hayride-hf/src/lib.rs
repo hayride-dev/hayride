@@ -17,7 +17,10 @@ impl HuggingFaceModelRepository {
         std::fs::create_dir_all(&custom_cache)?;
 
         // Build the API with the custom cache directory
-        let api = ApiBuilder::new().with_cache_dir(custom_cache).build()?;
+        let api = ApiBuilder::new()
+            .with_cache_dir(custom_cache)
+            .with_progress(false) // Disable progress bar
+            .build()?;
 
         Ok(HuggingFaceModelRepository { api: api })
     }
