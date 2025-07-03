@@ -609,7 +609,7 @@ where
                 return Ok(Ok(path));
             }
             Err(error) => {
-                model_bail!(self, error, anyhow!("Failed to load model '{}'", name,));
+                model_bail!(self, error.clone(), anyhow!("download model failed with '{}'", error));
             }
         }
     }
@@ -620,7 +620,7 @@ where
                 return Ok(Ok(path));
             }
             Err(error) => {
-                model_bail!(self, error, anyhow!("Failed to get model '{}'", name,));
+                model_bail!(self, error.clone(), anyhow!("get model failed with '{}'", error));
             }
         }
     }
@@ -631,7 +631,7 @@ where
                 return Ok(Ok(()));
             }
             Err(error) => {
-                model_bail!(self, error, anyhow!("Failed to delete model '{}'", name,));
+                model_bail!(self, error.clone(), anyhow!("delete model failed with '{}'", error));
             }
         }
     }
@@ -640,7 +640,7 @@ where
         match self.ctx().model_repository.list() {
             Ok(models) => Ok(Ok(models)),
             Err(error) => {
-                model_bail!(self, error, anyhow!("Failed to list models"));
+                model_bail!(self, error.clone(), anyhow!("list models failed with '{}'", error));
             }
         }
     }
