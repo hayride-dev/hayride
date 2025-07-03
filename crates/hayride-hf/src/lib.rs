@@ -80,9 +80,8 @@ impl ModelRepositoryInner for HuggingFaceModelRepository {
 
         if let Ok(entries) = std::fs::read_dir(&self.cache) {
             for entry in entries.flatten() {
-                if let Some(name) = entry.file_name().to_str() {
-                    // Only include files that look like model files
-                    // Currently only support for gguf model files
+                if let Some(name) = entry.path().to_str() {
+                    // Add the file path to the list if it ends with ".gguf"
                     if name.ends_with(".gguf") {
                         models.push(name.to_string());
                     }
