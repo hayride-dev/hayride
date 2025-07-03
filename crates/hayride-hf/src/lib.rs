@@ -69,6 +69,7 @@ impl ModelRepositoryInner for HuggingFaceModelRepository {
         if let Some(path) = cache.repo(repo).get(model_file) {
             // Remove the file from the cache
             std::fs::remove_file(path).map_err(|_| ErrorCode::RuntimeError)?;
+            return Ok(());
         }
         
         return Err(ErrorCode::ModelNotFound);
@@ -78,17 +79,21 @@ impl ModelRepositoryInner for HuggingFaceModelRepository {
         // List all models in the cache directory
         let mut models = Vec::new();
 
-        if let Ok(entries) = std::fs::read_dir(&self.cache) {
-            for entry in entries.flatten() {
-                if let Some(name) = entry.path().to_str() {
-                    // Add the file path to the list if it ends with ".gguf"
-                    if name.ends_with(".gguf") {
-                        models.push(name.to_string());
+        // Recursively find all model files in the cache directory and its subdirectories
+        let mut stack = vec![self.cache.clone()];
+        while let Some(dir) = stack.pop() {
+            if let Ok(entries) = std::fs::read_dir(&dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        stack.push(path);
+                    } else if let Some(name) = path.to_str() {
+                        if name.ends_with(".gguf") {
+                            models.push(name.to_string());
+                        }
                     }
                 }
             }
-        } else {
-            return Err(ErrorCode::RuntimeError);
         }
 
         Ok(models)
