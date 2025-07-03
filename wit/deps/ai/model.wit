@@ -1,4 +1,4 @@
-package hayride:ai@0.0.56;
+package hayride:ai@0.0.57;
 
 interface model {
     use types.{message};
@@ -42,5 +42,9 @@ interface model-repository {
     }
 
     // download a model by name
-    download: func(name: string) -> result<string, error>;
+    download-model: func(name: string) -> result<string, error>;
+    // get a model by name, returning the path or an error if not found
+    get-model: func(name: string) -> result<string, error>;
+    delete-model: func(name: string) -> result<_, error>;
+    list-models: func() -> result<list<string>, error>;
 }
