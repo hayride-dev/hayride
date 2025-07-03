@@ -14,8 +14,8 @@ sha512 = "e6b53a07221f1413953c9797c68f08b815fdaebf66419bbc1ea3e8b7dece7373106269
 
 [core]
 url = "https://github.com/hayride-dev/coven/releases/download/v0.0.57/hayride_core_v0.0.57.tar.gz"
-sha256 = "bada6bebc5136a2a86729b7aea65232cd0982af7f85440140ccaf93267dc5369"
-sha512 = "d51e1a5559b755eb24cc4f9ece064b59c3f01d6f2910ed3cad0f4e743a8679bfa868b2f53edf5910568aa94dc36b6910535372a2ace0a4d7b6afabaaaa39d553"
+sha256 = "3d6d695c915aec3541e3d1a5738692bd6b9e600fc5910c256729ea698d59fc6d"
+sha512 = "15e54b0b5afb317f115e62cd8a1f765fe967f68d76cadcefa7def084fb0ba08d6ce1b55fc2eafb3456ebf142cbaacb68574e89e2b1f25880c1c121f206a8c794"
 deps = ["io", "wasi-nn"]
 
 [filesystem]

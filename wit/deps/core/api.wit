@@ -55,6 +55,7 @@ interface ai-api {
         unknown,
         messages(list<message>),
         path(string),
+        paths(list<string>),
     }
 
     record request {
