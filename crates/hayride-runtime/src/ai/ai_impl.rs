@@ -600,7 +600,7 @@ impl<T> model_repository::Host for AiImpl<T>
 where
     T: AiView,
 {
-    fn download(
+    fn download_model(
         &mut self,
         name: String,
     ) -> Result<Result<String, Resource<model_repository::Error>>> {
@@ -610,6 +610,37 @@ where
             }
             Err(error) => {
                 model_bail!(self, error, anyhow!("Failed to load model '{}'", name,));
+            }
+        }
+    }
+
+    fn get_model(&mut self,name:wasmtime::component::__internal::String,) -> wasmtime::Result<std::result::Result<wasmtime::component::__internal::String,wasmtime::component::Resource<hayride_host_traits::ai::model::Error>>> {
+        match self.ctx().model_repository.get(name.clone()) {
+            Ok(path) => {
+                return Ok(Ok(path));
+            }
+            Err(error) => {
+                model_bail!(self, error, anyhow!("Failed to get model '{}'", name,));
+            }
+        }
+    }
+
+    fn delete_model(&mut self,name:wasmtime::component::__internal::String,) -> wasmtime::Result<std::result::Result<(),wasmtime::component::Resource<hayride_host_traits::ai::model::Error>>> {
+        match self.ctx().model_repository.delete(name.clone()) {
+            Ok(()) => {
+                return Ok(Ok(()));
+            }
+            Err(error) => {
+                model_bail!(self, error, anyhow!("Failed to delete model '{}'", name,));
+            }
+        }
+    }
+
+    fn list_models(&mut self,) -> wasmtime::Result<std::result::Result<wasmtime::component::__internal::Vec<wasmtime::component::__internal::String>,wasmtime::component::Resource<hayride_host_traits::ai::model::Error>>> {
+        match self.ctx().model_repository.list() {
+            Ok(models) => Ok(Ok(models)),
+            Err(error) => {
+                model_bail!(self, error, anyhow!("Failed to list models"));
             }
         }
     }
