@@ -4,7 +4,7 @@ pub mod generated {
         world: "hayride-wac",
         trappable_imports: true,
         with: {
-            "hayride:wac/types/error": hayride_host_traits::wac::Error,
+            "hayride:wac/wac/error": hayride_host_traits::wac::Error,
         },
     });
 }

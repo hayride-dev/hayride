@@ -1,8 +1,0 @@
-package hayride:silo@0.0.57;
-
-world imports {
-    // used for inter-instances aysnc processing and communication
-    import threads;
-    // used for creating new host processes 
-    import process;
-}

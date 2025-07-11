@@ -1,7 +1,16 @@
-package hayride:wac@0.0.57;
+package hayride:wac@0.0.59;
 
 interface wac {
-    use types.{error};
+    use types.{error-code};
+    
+    resource error {
+        /// Return the error code.
+        code: func() -> error-code;
+
+        /// Errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+    
     compose: func(contents: string) -> result<list<u8>, error>;
     plug: func(socket-pkg: string, plug-pkgs: list<string>) -> result<list<u8>, error>;
 }

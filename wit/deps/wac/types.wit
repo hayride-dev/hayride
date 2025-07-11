@@ -1,4 +1,4 @@
-package hayride:wac@0.0.57;
+package hayride:wac@0.0.59;
 
 interface types {
     enum error-code {
@@ -7,13 +7,5 @@ interface types {
         compose-failed,
         encode-failed,
         unknown
-    }
-
-    resource error {
-        /// Return the error code.
-        code: func() -> error-code;
-
-        /// Errors can propagated with backend specific status through a string value.
-        data: func() -> string;
     }
 }

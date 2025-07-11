@@ -1,74 +1,25 @@
-package hayride:core@0.0.57;
+/*
+package hayride:core@0.0.59;
 
+TODO: Validate defining and interface for our core servers ( i.e api and ai-api )
 interface api {
-    use hayride:silo/threads@0.0.57.{thread-metadata, thread-status};
+    use hayride:core/types@0.0.59.{cast}
+    use hayride:silo/threads@0.0.59.{thread-metadata, thread-status};
 
-    record cast {
-        name: string,
-        function: string,
-        args: list<string>,
-    }
-
-    variant request-data {
-        unknown,
-        cast(cast),
-        session-id(string),
-    }
-
-    variant response-data {
-        unknown,
-        sessions(list<thread-metadata>),
-        session-id(string),
-        session-status(thread-status),
-    }
-
-    record request {
-        data: request-data,
-        metadata: list<tuple<string, string>>,
-    }
-
-    record response {
-        data: response-data,
-        error: string,
-
-        // Cursor for pagination
-        next: string,
-        prev: string,
-    }
+    cast: func(request: cast) -> result<string, error>;
+    sessions: func() -> result<list<thread-metadata>, error>;
+    stop-session: func(session-id: string) -> result<thread-status, error>;
+    session-status: func(session-id: string) -> result<thread-status, error>;
+    publish: func(pkg: string, version: string, name: string) -> result<_, error>;
 }
 
-interface ai-api {
-    use hayride:ai/types@0.0.57.{message};
+interface feature-ai {
+    use hayride:core/types@0.0.59.{generate};
+    use hayride:ai/types@0.0.59.{message};
 
-    record generate {
-        model: string,
-        system: string,
-        messages: list<message>,
-    }
-
-    variant request-data {
-        unknown,
-        generate(generate),
-    }
-
-    variant response-data {
-        unknown,
-        messages(list<message>),
-        path(string),
-        paths(list<string>),
-    }
-
-    record request {
-        data: request-data,
-        metadata: list<tuple<string, string>>,
-    }
-
-    record response {
-        data: response-data,
-        error: string,
-
-        // Cursor for pagination
-        next: string,
-        prev: string,
-    }
+    generate: func(request: generate) -> result<list<messages>, error>; 
+    models: func() -> result<list<string>, error>;
+    delete-model: func(model: string) -> result<_, error>;
+    download-model: func(model: string) -> result<_, error>;   
 }
+*/
