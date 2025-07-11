@@ -1,0 +1,22 @@
+package hayride:silo@0.0.59;
+
+interface types {
+  /// system error numbers
+    type err-no = u32;
+
+    enum thread-status {
+        unknown,
+        processing,
+        exited,
+        killed
+    }
+
+    record thread-metadata {
+        id: string,
+        pkg: string,
+        function: string,
+        args: list<string>,
+        output: list<u8>,
+        status: thread-status
+    }
+}
