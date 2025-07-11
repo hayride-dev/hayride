@@ -3,7 +3,7 @@ use leptos::web_sys::console;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
-use crate::stores::bindings::{Content, Data, Message, Request, Response, Role, TextContent};
+use crate::stores::bindings::{Content, RequestData, ResponseData, Message, Request, Response, Role, TextContent, api::Generate};
 use crate::stores::prompt::Prompt;
 use wasm_bindgen_futures::spawn_local;
 
@@ -70,7 +70,13 @@ pub fn Chat() -> impl IntoView {
                 let request = Request {
                     // role: Role::User,
                     // content: vec![msg.clone()],
-                    data: Data::Messages(vec![message.into()]),
+                    data: RequestData::Generate(
+                        Generate {
+                            model: prompt.agent.clone(), // TODO: Correct UI model
+                            system: "You are a helpful AI assistant.".to_string(), // TODO: Configure system prompt
+                            messages: vec![message.into()]
+                        }
+                    ),
                     metadata: metadata,
                 };
 
@@ -110,7 +116,7 @@ pub fn Chat() -> impl IntoView {
 
                                     let data = response_data.data;
                                     match data {
-                                        Data::Messages(messages) => {
+                                        ResponseData::Messages(messages) => {
                                             // Convert messages to a single concatenated response
                                             let concatenated_responses: String = messages
                                                 .into_iter()
@@ -133,6 +139,11 @@ pub fn Chat() -> impl IntoView {
                                                         Some(concatenated_responses);
                                                 }
                                             });
+                                        }
+                                        _ => {
+                                            console::log_1(
+                                                &format!("Unexpected data type").into(),
+                                            );
                                         }
                                     }
                                 }

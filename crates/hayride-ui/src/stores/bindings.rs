@@ -12,12 +12,12 @@ mod generated {
 }
 
 pub use self::generated::hayride::ai::types;
-pub use self::generated::hayride::core::ai_api as api;
+pub use self::generated::hayride::core::types as api;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Request {
-    pub data: Data,
+    pub data: RequestData,
     pub metadata: Vec<(String, String)>,
 }
 
@@ -42,7 +42,7 @@ impl From<Request> for api::Request {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Response {
-    pub data: Data,
+    pub data: ResponseData,
     pub error: String,
     pub next: String,
     pub prev: String,
@@ -72,27 +72,78 @@ impl From<Response> for api::Response {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum Data {
-    Messages(Vec<Message>),
+pub enum RequestData {
+    Unknown,
+    Cast(api::Cast),
+    SessionId(String),
+    Generate(api::Generate),
 }
 
-impl From<api::Data> for Data {
-    fn from(d: api::Data) -> Self {
+impl From<api::RequestData> for RequestData {
+    fn from(d: api::RequestData) -> Self {
         match d {
-            api::Data::Unknown => Data::Messages(vec![]),
-            api::Data::Messages(msgs) => {
-                Data::Messages(msgs.into_iter().map(|m| m.into()).collect())
-            }
+            api::RequestData::Unknown => RequestData::Unknown,
+            api::RequestData::Cast(c) => RequestData::Cast(c.into()),
+            api::RequestData::SessionId(id) => RequestData::SessionId(id),
+            api::RequestData::Generate(g) => RequestData::Generate(g.into()),
         }
     }
 }
 
-impl From<Data> for api::Data {
-    fn from(dc: Data) -> Self {
+impl From<RequestData> for api::RequestData {
+    fn from(dc: RequestData) -> Self {
         match dc {
-            Data::Messages(msgs) => {
-                api::Data::Messages(msgs.into_iter().map(|m| m.into()).collect())
-            }
+            RequestData::Unknown => api::RequestData::Unknown,
+            RequestData::Cast(c) => api::RequestData::Cast(c.into()),
+            RequestData::SessionId(id) => api::RequestData::SessionId(id),
+            RequestData::Generate(g) => api::RequestData::Generate(g.into()),
+        }
+    }
+}
+
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ResponseData {
+    Unknown,
+    Sessions(Vec<api::ThreadMetadata>),
+    SessionId(String),
+    SessionStatus(api::ThreadStatus),
+    Messages(Vec<Message>),
+    Path(String),
+    Paths(Vec<String>),
+}
+
+impl From<api::ResponseData> for ResponseData {
+    fn from(d: api::ResponseData) -> Self {
+        match d {
+            api::ResponseData::Unknown => ResponseData::Unknown,
+            api::ResponseData::Sessions(sessions) => ResponseData::Sessions(sessions.into_iter().map(|s| s.into()).collect()),
+            api::ResponseData::SessionId(id) => ResponseData::SessionId(id),
+            api::ResponseData::SessionStatus(status) => ResponseData::SessionStatus(status.into()),
+            api::ResponseData::Messages(msgs) => {
+                ResponseData::Messages(msgs.into_iter().map(|m| m.into()).collect())
+            },
+            api::ResponseData::Path(path) => ResponseData::Path(path),
+            api::ResponseData::Paths(paths) => ResponseData::Paths(paths),
+        }
+    }
+}
+
+impl From<ResponseData> for api::ResponseData {
+    fn from(dc: ResponseData) -> Self {
+        match dc {
+            ResponseData::Unknown => api::ResponseData::Unknown,
+            ResponseData::Sessions(sessions) => {
+                api::ResponseData::Sessions(sessions.into_iter().map(|s| s.into()).collect())
+            },
+            ResponseData::SessionId(id) => api::ResponseData::SessionId(id),
+            ResponseData::SessionStatus(status) => api::ResponseData::SessionStatus(status.into()),
+            ResponseData::Messages(msgs) => {
+                api::ResponseData::Messages(msgs.into_iter().map(|m| m.into()).collect())
+            },
+            ResponseData::Path(path) => api::ResponseData::Path(path),
+            ResponseData::Paths(paths) => api::ResponseData::Paths(paths),
         }
     }
 }
@@ -221,7 +272,7 @@ pub struct ToolInput {
     pub content_type: String,
     pub id: String,
     pub name: String,
-    pub input: String,
+    pub input: Vec<(String, String)>,
 }
 
 impl From<types::ToolInput> for ToolInput {
