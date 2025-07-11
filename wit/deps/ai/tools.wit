@@ -1,5 +1,5 @@
 
-package hayride:ai@0.0.57;
+package hayride:ai@0.0.59;
 
 interface tools {
     use types.{tool-schema, tool-input, tool-output};

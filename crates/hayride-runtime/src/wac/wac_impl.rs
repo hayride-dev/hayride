@@ -1,4 +1,4 @@
-use crate::wac::bindings::{types, types::ErrorCode, wac};
+use crate::wac::bindings::{types::ErrorCode, wac};
 use crate::wac::{WacImpl, WacView};
 use hayride_host_traits::wac::Error;
 
@@ -55,9 +55,7 @@ where
     }
 }
 
-impl<T> types::Host for WacImpl<T> where T: WacView {}
-
-impl<T> types::HostError for WacImpl<T>
+impl<T> wac::HostError for WacImpl<T>
 where
     T: WacView,
 {

@@ -14,7 +14,6 @@ where
     T: WacView,
 {
     crate::wac::bindings::wac::add_to_linker::<T, HasWac<T>>(l, |x| WacImpl(x))?;
-    crate::wac::bindings::types::add_to_linker::<T, HasWac<T>>(l, |x| WacImpl(x))?;
 
     Ok(())
 }

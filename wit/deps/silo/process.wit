@@ -1,8 +1,7 @@
-package hayride:silo@0.0.57;
+package hayride:silo@0.0.59;
 
 interface process {
-    /// system error numbers
-    type err-no = u32;
+    use types.{err-no};
 
     spawn: func(path: string, args: list<string>, envs: list<tuple<string,string>>) -> result<s32, err-no>; // pid
     wait: func(pid: u32) -> result<s32, err-no>;
