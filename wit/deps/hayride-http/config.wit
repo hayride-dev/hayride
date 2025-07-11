@@ -1,0 +1,11 @@
+package hayride:http@0.0.59;
+
+interface config {
+    use types.{server-config, error-code};
+    resource error {
+        code: func() -> error-code;
+        data: func() -> string;
+    }
+    get: func() -> result<server-config, error>;
+}
+

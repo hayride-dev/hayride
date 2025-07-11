@@ -1,0 +1,7 @@
+package hayride:socket@0.0.59;
+
+interface websocket {
+    use wasi:io/streams@0.2.0.{input-stream, output-stream};
+    handle: func(input: input-stream, output: output-stream); 
+}
+

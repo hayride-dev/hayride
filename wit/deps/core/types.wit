@@ -1,0 +1,49 @@
+package hayride:core@0.0.59;
+
+interface types {
+    use hayride:silo/threads@0.0.59.{thread-metadata, thread-status};
+    use hayride:ai/types@0.0.59.{message};
+
+    record cast {
+        name: string,
+        function: string,
+        args: list<string>,
+    }
+
+    record generate {
+        model: string,
+        system: string,
+        messages: list<message>,
+    }
+
+    variant request-data {
+        unknown,
+        cast(cast),
+        session-id(string),
+        generate(generate),
+    }
+
+    variant response-data {
+        unknown,
+        sessions(list<thread-metadata>),
+        session-id(string),
+        session-status(thread-status),
+        messages(list<message>),
+        path(string),
+        paths(list<string>),
+    }
+
+    record request {
+        data: request-data,
+        metadata: list<tuple<string, string>>,
+    }
+
+    record response {
+        data: response-data,
+        error: string,
+
+        // Cursor for pagination
+        next: string,
+        prev: string,
+    }
+}

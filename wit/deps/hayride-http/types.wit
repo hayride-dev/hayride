@@ -1,0 +1,16 @@
+package hayride:http@0.0.59;
+
+interface types {
+    enum error-code {
+        invalid,
+        not-found,
+        unknown
+    }
+
+    record server-config {
+        address: string,
+        read-timeout: u32,
+        write-timeout: u32,
+        max-header-bytes: u32,
+    }
+}
