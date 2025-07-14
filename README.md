@@ -1,7 +1,7 @@
 # Hayride
 Hayride is a Sandboxed execution environment powered by WebAssembly. It allows you to run untrusted code securely and efficiently in a controlled environment.
 
-Hayride uses `wasmtime` as its WebAssembly runtime, and adds additional capabilites by implementing various WebAssembly Interfaces defined in [coven](https://github.com/hayride-dev/coven).
+Hayride uses `wasmtime` as its WebAssembly runtime, and adds additional capabilities by implementing various WebAssembly Interfaces defined in [coven](https://github.com/hayride-dev/coven).
 
 By using WIT (WebAssembly Interface Types), Hayride can seamlessly integrate with other WebAssembly components and services, allowing for greater flexibility and interoperability. Including implementing capabilities through WebAssembly Components vs host implementations and composing them into larger applications.
 
