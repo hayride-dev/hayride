@@ -1,0 +1,18 @@
+package hayride:core@0.0.60;
+
+interface version {
+    enum error-code {
+        get-version-failed,
+        unknown
+    }
+    
+    resource error {
+        /// Return the error code.
+        code: func() -> error-code;
+
+        /// Errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+    
+    latest: func() -> result<string, error>;
+}

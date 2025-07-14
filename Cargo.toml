@@ -38,6 +38,7 @@ hayride-host-traits = { path = "crates/hayride-host-traits" }
 hayride-lancedb = { path = "crates/hayride-lancedb" }
 hayride-llama = { path = "crates/hayride-llama" }
 hayride-wac = { path = "crates/hayride-wac" }
+hayride-core = { path = "crates/hayride-core" }
 
 hayride-llama-rs-sys = "0.0.4"
 
@@ -57,6 +58,7 @@ log = "0.4.25"
 log-reload = "0.1.2"
 nix = { version = "0.29.0", features = ["signal"] }
 rand = "0.9.0"
+reqwest = { version = "0.12.22", features = ["blocking", "json"] }
 semver = "1.0.23"
 serde = "1.0.217"
 serde_json = "1.0.138"

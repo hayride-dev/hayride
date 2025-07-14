@@ -3,6 +3,7 @@ use crate::ai::AiCtx;
 use crate::bindings::hayride_cli::HayrideCliPre;
 use crate::bindings::hayride_server::HayrideServerPre;
 use crate::bindings::hayride_ws::HayrideWsPre;
+use crate::core::CoreCtx;
 use crate::server::Server;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
@@ -196,6 +197,7 @@ impl WasmtimeEngine {
             Host {
                 ctx: wasi_ctx,
                 http_ctx: WasiHttpCtx::new(),
+                core_ctx: CoreCtx::new(),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                 silo_ctx: silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),

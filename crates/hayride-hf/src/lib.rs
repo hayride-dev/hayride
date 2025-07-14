@@ -25,7 +25,10 @@ impl HuggingFaceModelRepository {
             .with_progress(false) // Disable progress bar
             .build()?;
 
-        Ok(HuggingFaceModelRepository { api: api, cache: custom_cache })
+        Ok(HuggingFaceModelRepository {
+            api: api,
+            cache: custom_cache,
+        })
     }
 }
 
@@ -71,7 +74,7 @@ impl ModelRepositoryInner for HuggingFaceModelRepository {
             std::fs::remove_file(path).map_err(|_| ErrorCode::RuntimeError)?;
             return Ok(());
         }
-        
+
         return Err(ErrorCode::ModelNotFound);
     }
 
