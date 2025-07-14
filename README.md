@@ -21,7 +21,7 @@ You can use the provided `Makefile` to build Hayride. The build process will com
 
 Hayride depends on WebAssembly Components that implement a number of Hayride interfaces. If you are building from source, you will need to get a copy of the `core` Hayride components.
 
-Currently these are closed source but made freely available in our [releases](https://github.com/hayride-dev/releases) repository. These components are licensed under a "free" non-commerical use license. 
+Currently these are closed source but made freely available in our [releases](https://github.com/hayride-dev/releases) repository. These components are licensed under a "free" non-commercial use license. 
 
 These components are required for Hayride to function properly, as they provide the necessary interfaces and capabilities that Hayride expects. However, these components are swappable with your own implementations, as long as they adhere to the expected interfaces.
 
