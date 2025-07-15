@@ -191,6 +191,7 @@ impl WasmtimeEngine {
         &self,
         args: &[impl AsRef<str> + std::marker::Sync],
         silo_ctx: SiloCtx,
+        core_ctx: CoreCtx,
         mut stdin: bool,
     ) -> wasmtime::Result<wasmtime::Store<Host>> {
         let mut outdir = self.out_dir.clone();
@@ -206,7 +207,7 @@ impl WasmtimeEngine {
             Host {
                 ctx: wasi_ctx,
                 http_ctx: WasiHttpCtx::new(),
-                core_ctx: CoreCtx::new(),
+                core_ctx: core_ctx.clone(),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                 silo_ctx: silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
@@ -339,15 +340,18 @@ impl WasmtimeEngine {
             }
         });
 
+        let silo_ctx = SiloCtx::new(
+            self.out_dir.clone(),
+            self.registry_path.clone(),
+            self.model_path.clone(),
+        );
+
+        let core_ctx = CoreCtx::new();
+
         // Handle component based on its type
         match component_type {
             ComponentType::Cli => {
-                let silo_ctx = SiloCtx::new(
-                    self.out_dir.clone(),
-                    self.registry_path.clone(),
-                    self.model_path.clone(),
-                );
-                let mut store = self.create_store(args, silo_ctx.clone(), true)?;
+                let mut store = self.create_store(args, silo_ctx.clone(), core_ctx, true)?;
 
                 // TODO: Configuration for which bindings to use
                 let pre: HayrideCliPre<Host> =
@@ -361,12 +365,7 @@ impl WasmtimeEngine {
                 return Ok(vec![]);
             }
             ComponentType::Reactor => {
-                let silo_ctx = SiloCtx::new(
-                    self.out_dir.clone(),
-                    self.registry_path.clone(),
-                    self.model_path.clone(),
-                );
-                let mut store = self.create_store(args, silo_ctx.clone(), true)?;
+                let mut store = self.create_store(args, silo_ctx.clone(), core_ctx, true)?;
 
                 // For Reactor, lookup the function to call and call it
                 let pre: wasmtime::component::InstancePre<Host> =
@@ -509,14 +508,8 @@ impl WasmtimeEngine {
                 let pre: HayrideServerPre<Host> =
                     HayrideServerPre::new(linker.instantiate_pre(&component)?)?;
 
-                let silo_ctx = SiloCtx::new(
-                    self.out_dir.clone(),
-                    self.registry_path.clone(),
-                    self.model_path.clone(),
-                );
-
                 // Get config from server instance
-                let mut store = self.create_store(args, silo_ctx.clone(), false)?;
+                let mut store = self.create_store(args, silo_ctx.clone(), core_ctx.clone(), false)?;
                 let server = pre.instantiate_async(&mut store).await?;
                 let config = match server.hayride_http_config().call_get(store).await? {
                     Ok(c) => {
@@ -552,6 +545,7 @@ impl WasmtimeEngine {
                     self.out_dir.clone(),
                     pre,
                     silo_ctx,
+                    core_ctx,
                     self.registry_path.clone(),
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
@@ -589,12 +583,6 @@ impl WasmtimeEngine {
                 let ws_pre: HayrideWsPre<Host> =
                     HayrideWsPre::new(linker.instantiate_pre(&component)?)?;
 
-                let silo_ctx = SiloCtx::new(
-                    self.out_dir.clone(),
-                    self.registry_path.clone(),
-                    self.model_path.clone(),
-                );
-
                 // TODO: Add instance export for ws config
                 let address = "127.0.0.1:8082".to_string(); // Default address
 
@@ -606,6 +594,7 @@ impl WasmtimeEngine {
                     self.out_dir.clone(),
                     ws_pre,
                     silo_ctx,
+                    core_ctx,
                     self.registry_path.clone(),
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),

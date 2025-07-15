@@ -1,9 +1,19 @@
 use wasmtime::component::ResourceTable;
 
 use super::VersionBackend;
+#[derive(Clone, Debug, Default)]
+pub struct VersionCache {
+    /// epoch seconds
+    pub last_check: Option<u64>,
+    /// Last version string returned
+    pub last_version: Option<String>,
+}
+use std::sync::{Arc, Mutex};
 
 pub struct CoreCtx {
     pub version_backend: VersionBackend,
+    /// Cache for version info
+    pub version_cache: Arc<Mutex<VersionCache>>,
 }
 
 impl CoreCtx {
@@ -12,6 +22,30 @@ impl CoreCtx {
             Box::new(hayride_core::VersionBackend::default());
         Self {
             version_backend: VersionBackend(version_backend),
+            version_cache: Arc::new(Mutex::new(VersionCache::default())),
+        }
+    }
+
+    /// Get a clone of the version cache struct
+    pub fn get_version_cache(&self) -> VersionCache {
+        self.version_cache.lock().unwrap().clone()
+    }
+
+    /// Set the version cache values
+    pub fn set_version_cache(&self, last_check: Option<u64>, last_version: Option<String>) {
+        let mut cache = self.version_cache.lock().unwrap();
+        cache.last_check = last_check;
+        cache.last_version = last_version;
+    }
+}
+
+impl Clone for CoreCtx {
+    fn clone(&self) -> Self {
+        let version_backend: Box<hayride_core::VersionBackend> =
+            Box::new(hayride_core::VersionBackend::default());
+        Self {
+            version_backend: VersionBackend(version_backend),
+            version_cache: Arc::clone(&self.version_cache),
         }
     }
 }
