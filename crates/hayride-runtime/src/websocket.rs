@@ -1,5 +1,6 @@
 use super::create_wasi_ctx;
 use crate::bindings::hayride_ws::{HayrideWs, HayrideWsPre};
+use crate::core::CoreCtx;
 use crate::silo::SiloCtx;
 use crate::Host;
 
@@ -81,6 +82,7 @@ impl WebsocketServer {
                 Host {
                     ctx: wasi_ctx,
                     http_ctx: WasiHttpCtx::new(),
+                    core_ctx: CoreCtx::new(),
                     ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                     silo_ctx: self.silo_ctx.clone(),
                     wac_ctx: WacCtx::new(self.registry_path.clone()),

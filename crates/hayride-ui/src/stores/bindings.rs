@@ -101,7 +101,6 @@ impl From<RequestData> for api::RequestData {
     }
 }
 
-
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ResponseData {
@@ -118,12 +117,14 @@ impl From<api::ResponseData> for ResponseData {
     fn from(d: api::ResponseData) -> Self {
         match d {
             api::ResponseData::Unknown => ResponseData::Unknown,
-            api::ResponseData::Sessions(sessions) => ResponseData::Sessions(sessions.into_iter().map(|s| s.into()).collect()),
+            api::ResponseData::Sessions(sessions) => {
+                ResponseData::Sessions(sessions.into_iter().map(|s| s.into()).collect())
+            }
             api::ResponseData::SessionId(id) => ResponseData::SessionId(id),
             api::ResponseData::SessionStatus(status) => ResponseData::SessionStatus(status.into()),
             api::ResponseData::Messages(msgs) => {
                 ResponseData::Messages(msgs.into_iter().map(|m| m.into()).collect())
-            },
+            }
             api::ResponseData::Path(path) => ResponseData::Path(path),
             api::ResponseData::Paths(paths) => ResponseData::Paths(paths),
         }
@@ -136,12 +137,12 @@ impl From<ResponseData> for api::ResponseData {
             ResponseData::Unknown => api::ResponseData::Unknown,
             ResponseData::Sessions(sessions) => {
                 api::ResponseData::Sessions(sessions.into_iter().map(|s| s.into()).collect())
-            },
+            }
             ResponseData::SessionId(id) => api::ResponseData::SessionId(id),
             ResponseData::SessionStatus(status) => api::ResponseData::SessionStatus(status.into()),
             ResponseData::Messages(msgs) => {
                 api::ResponseData::Messages(msgs.into_iter().map(|m| m.into()).collect())
-            },
+            }
             ResponseData::Path(path) => api::ResponseData::Path(path),
             ResponseData::Paths(paths) => api::ResponseData::Paths(paths),
         }

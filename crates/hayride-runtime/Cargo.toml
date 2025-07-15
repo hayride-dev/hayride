@@ -12,6 +12,7 @@ hayride-llama = { workspace = true, optional = true }
 hayride-lancedb = { workspace = true, optional = true }
 hayride-hf = { workspace = true, optional = true }
 hayride-wac = { workspace = true }
+hayride-core = { workspace = true }
 
 anyhow = { workspace = true}
 async-trait = { workspace = true }

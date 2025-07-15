@@ -1,0 +1,12 @@
+[package]
+name = "hayride-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true }
+
+anyhow = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }

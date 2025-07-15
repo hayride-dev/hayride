@@ -3,7 +3,10 @@ use leptos::web_sys::console;
 use reactive_stores::Store;
 
 use crate::components::chat::{ChatBubble, ChatMessage, ChatTextArea};
-use crate::stores::bindings::{Content, RequestData, ResponseData, Message, Request, Response, Role, TextContent, api::Generate};
+use crate::stores::bindings::{
+    api::Generate, Content, Message, Request, RequestData, Response, ResponseData, Role,
+    TextContent,
+};
 use crate::stores::prompt::Prompt;
 use wasm_bindgen_futures::spawn_local;
 
@@ -70,13 +73,11 @@ pub fn Chat() -> impl IntoView {
                 let request = Request {
                     // role: Role::User,
                     // content: vec![msg.clone()],
-                    data: RequestData::Generate(
-                        Generate {
-                            model: prompt.agent.clone(), // TODO: Correct UI model
-                            system: "You are a helpful AI assistant.".to_string(), // TODO: Configure system prompt
-                            messages: vec![message.into()]
-                        }
-                    ),
+                    data: RequestData::Generate(Generate {
+                        model: prompt.agent.clone(), // TODO: Correct UI model
+                        system: "You are a helpful AI assistant.".to_string(), // TODO: Configure system prompt
+                        messages: vec![message.into()],
+                    }),
                     metadata: metadata,
                 };
 
@@ -141,9 +142,7 @@ pub fn Chat() -> impl IntoView {
                                             });
                                         }
                                         _ => {
-                                            console::log_1(
-                                                &format!("Unexpected data type").into(),
-                                            );
+                                            console::log_1(&format!("Unexpected data type").into());
                                         }
                                     }
                                 }
