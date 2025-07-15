@@ -6,16 +6,39 @@ use wasmtime::component::Resource;
 use wasmtime::Result;
 
 use anyhow::anyhow;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 impl<T> version::Host for CoreImpl<T>
 where
     T: CoreView,
 {
     fn latest(&mut self) -> Result<Result<String, Resource<version::Error>>> {
-        let result = self.ctx().version_backend.latest();
+        let ctx = self.ctx();
+        let cache = ctx.get_version_cache();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| {
+            anyhow!("Error getting current time: {}", e)
+        })?.as_secs();
 
+        // Only check the version if it's been more than an hour since the last check
+        let should_check = match cache.last_check {
+            Some(last) => now > last + 3600,
+            None => true,
+        };
+
+        if !should_check {
+            // If we have a cached version and it's still valid, return it
+            if let Some(version) = cache.last_version {
+                return Ok(Ok(version));
+            }
+        }
+
+        let result = ctx.version_backend.latest();
         match result {
-            Ok(version) => Ok(Ok(version)),
+            Ok(version) => {
+                // Store the new version in the cache
+                ctx.set_version_cache(Some(now), Some(version.clone()));
+                Ok(Ok(version))
+            },
             Err(e) => {
                 let error = Error {
                     code: e,

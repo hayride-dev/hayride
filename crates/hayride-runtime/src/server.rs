@@ -20,6 +20,7 @@ pub struct Server {
 
     pre: HayrideServerPre<Host>,
     silo_ctx: SiloCtx,
+    core_ctx: CoreCtx,
     registry_path: String,
     model_path: Option<String>,
     args: Vec<String>,
@@ -31,6 +32,7 @@ impl Server {
         out_dir: Option<String>,
         pre: HayrideServerPre<Host>,
         silo_ctx: SiloCtx,
+        core_ctx: CoreCtx,
         registry_path: String,
         model_path: Option<String>,
         args: Vec<String>,
@@ -40,6 +42,7 @@ impl Server {
             out_dir,
             pre,
             silo_ctx,
+            core_ctx,
             registry_path,
             model_path,
             args,
@@ -62,7 +65,7 @@ impl Server {
             Host {
                 ctx: wasi_ctx,
                 http_ctx: WasiHttpCtx::new(),
-                core_ctx: CoreCtx::new(),
+                core_ctx: self.core_ctx.clone(),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                 silo_ctx: self.silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
