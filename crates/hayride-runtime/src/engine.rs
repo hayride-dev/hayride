@@ -43,6 +43,7 @@ pub struct EngineBuilder {
     silo_enabled: bool,
     wac_enabled: bool,
     wasi_enabled: bool,
+    core_enabled: bool,
 }
 
 impl EngineBuilder {
@@ -60,6 +61,7 @@ impl EngineBuilder {
             silo_enabled: false,
             wac_enabled: false,
             wasi_enabled: true,
+            core_enabled: true,
         }
     }
 
@@ -113,6 +115,11 @@ impl EngineBuilder {
         self
     }
 
+    pub fn core_enabled(mut self, core_enabled: bool) -> Self {
+        self.core_enabled = core_enabled;
+        self
+    }
+
     pub fn build(self) -> Result<WasmtimeEngine> {
         let id = Uuid::new_v4();
 
@@ -147,6 +154,7 @@ impl EngineBuilder {
             silo_enabled: self.silo_enabled,
             wac_enabled: self.wac_enabled,
             wasi_enabled: self.wasi_enabled,
+            core_enabled: self.core_enabled,
         })
     }
 }
@@ -167,6 +175,7 @@ pub struct WasmtimeEngine {
     silo_enabled: bool,
     wac_enabled: bool,
     wasi_enabled: bool,
+    core_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -218,14 +227,14 @@ impl WasmtimeEngine {
         let mut ai: bool = false;
         let mut silo: bool = false;
         let mut wac: bool = false;
+        let mut core: bool = false;
         wit.imports().iter().for_each(|i| {
             match i.name.namespace.as_str() {
                 "hayride" => match i.name.name.as_str() {
-                    "silo" => {
-                        silo = true;
-                    }
+                    "silo" => silo = true,
                     "ai" => ai = true,
                     "wac" => wac = true,
+                    "core" => core = true,
                     _ => {
                         log::debug!("unknown import Found: {}", i.name.name);
                     }
@@ -248,6 +257,7 @@ impl WasmtimeEngine {
         log::debug!("ai import enabled: {:?}", ai);
         log::debug!("silo import enabled: {:?}", silo);
         log::debug!("wac import enabled: {:?}", wac);
+        log::debug!("core import enabled: {:?}", core);
 
         if wasi {
             if !self.wasi_enabled {
@@ -281,6 +291,14 @@ impl WasmtimeEngine {
             }
 
             crate::wac::add_to_linker_sync(&mut linker)?;
+        }
+
+        if core {
+            if !self.core_enabled {
+                return Err(anyhow::anyhow!("Core is not enabled").into());
+            }
+
+            crate::core::add_to_linker_sync(&mut linker)?;
         }
 
         return Ok(linker);

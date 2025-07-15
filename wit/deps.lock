@@ -14,8 +14,8 @@ sha512 = "e6b53a07221f1413953c9797c68f08b815fdaebf66419bbc1ea3e8b7dece7373106269
 
 [core]
 url = "https://github.com/hayride-dev/coven/releases/download/v0.0.60/hayride_core_v0.0.60.tar.gz"
-sha256 = "aad039c27366a6e337480bceb9e627516c98e6236ddc92b578571f4ac48d5729"
-sha512 = "62a77e58ad37e5075c6fb5dc395013d456c2739aa9958c49132672e468b2e09a0c43cfa01c13530495d04930e3d220939d0b93cc51f45305ab10579ef7eca901"
+sha256 = "df71e7c6c8de9799f3ff1516e658447b89d314e9e2e98341580db5ba070971e0"
+sha512 = "2ad42f8fe0a5432943df81200803769381b7314d0988226ee2105aae94cecc3d497f063c1136a594c9dec1eb6efd246cb52e4197de538f0db6d3921b87fab7b6"
 deps = ["io", "wasi-nn"]
 
 [filesystem]
@@ -26,6 +26,12 @@ sha512 = "ead452f9b7bfb88593a502ec00d76d4228003d51c40fd0408aebc32d35c94673551b00
 url = "https://github.com/hayride-dev/coven/releases/download/v0.0.60/hayride_http_v0.0.60.tar.gz"
 sha256 = "49a3b76c249857f57123a3baa687c014f2ce9b066f0e885688b4c9e8687f2cab"
 sha512 = "3ab4f015bf783a43741ca047afd30586392e5a6052b3ba93037e98c80b09f1b0e8c89218b8e45cac3a7b2c7a1ca09088bd602b55b31c2a58ba24731eed4c2d73"
+
+[http]
+url = "https://github.com/WebAssembly/wasi-http/archive/refs/tags/v0.2.0.tar.gz"
+sha256 = "8f44402bde16c48e28c47dc53eab0b26af5b3b3482a1852cf77673e0880ba1c1"
+sha512 = "760695f9a25c25bf75a25b731cb21c3bda9e288e450edda823324ecbc73d5d798bbb5de2edad999566980836f037463ee9e57d61789d04b3f3e381475b1a9a0f"
+deps = ["cli", "clocks", "filesystem", "io", "random", "sockets"]
 
 [io]
 sha256 = "7210e5653539a15478f894d4da24cc69d61924cbcba21d2804d69314a88e5a4c"

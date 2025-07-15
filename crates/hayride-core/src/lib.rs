@@ -7,10 +7,17 @@ pub struct VersionBackend {}
 
 impl VersionInner for VersionBackend {
     fn latest(&self) -> Result<String, ErrorCode> {
-        // Get the latest version from Github releases
-        let response =
-            reqwest::blocking::get("https://api.github.com/repos/hayride-dev/releases/latest")
-                .map_err(|_| ErrorCode::GetVersionFailed)?;
+        // Get the latest version from Hayride releases
+        let client = reqwest::blocking::Client::new();
+        let response = match client
+            .get("https://api.github.com/repos/hayride-dev/releases/releases/latest")
+            .header(reqwest::header::USER_AGENT, "Hayride")
+            .send() {
+            Ok(resp) => resp,
+            Err(_) => {
+                return Err(ErrorCode::GetVersionFailed);
+            }
+        };
 
         // Parse the tag
         let json: serde_json::Value = response.json().map_err(|_| ErrorCode::GetVersionFailed)?;

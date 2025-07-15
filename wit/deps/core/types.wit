@@ -31,6 +31,7 @@ interface types {
         messages(list<message>),
         path(string),
         paths(list<string>),
+        version(string),
     }
 
     record request {
