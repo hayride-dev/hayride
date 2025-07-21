@@ -1,7 +1,7 @@
 package hayride:ai@0.0.61;
 
 interface types {
-    use hayride:mcp/types@0.0.61.{tool-schema, call-tool-params, call-tool-result};
+    use hayride:mcp/types@0.0.61.{tool, call-tool-params, call-tool-result};
 
     enum role {
         user,
@@ -11,21 +11,17 @@ interface types {
         unknown
     }
 
-    record text-content {
-        text: string, 
-        content-type: string
-    }
-    
-    variant content {
+    variant message-content {
         none,
-        text(text-content),
-        tool-schema(tool-schema),
+        text(string),
+        blob(list<u8>),
+        tools(list<tool>),
         tool-input(call-tool-params),
         tool-output(call-tool-result),
     }
 
     record message {
         role: role,
-        content: list<content>
+        content: list<message-content>,
     }
 }
