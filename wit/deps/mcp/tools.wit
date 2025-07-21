@@ -1,8 +1,8 @@
 
-package hayride:ai@0.0.60;
+package hayride:mcp@0.0.61;
 
 interface tools {
-    use types.{tool-schema, tool-input, tool-output};
+    use types.{tool, content, call-tool-params, call-tool-result, list-tools-result};
 
     enum error-code {
         tool-call-failed,
@@ -19,8 +19,7 @@ interface tools {
 
     resource tools {
         constructor();
-        capabilities: func() -> result<list<tool-schema>, error>;
-        call: func(input: tool-input) -> result<tool-output, error-code>;
+        list-tools: func(cursor: string) -> result<list-tools-result, error>;
+        call-tool: func(params: call-tool-params) -> result<call-tool-result, error>;
     }
 }
-

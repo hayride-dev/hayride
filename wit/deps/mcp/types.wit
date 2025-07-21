@@ -1,0 +1,156 @@
+package hayride:mcp@0.0.61;
+
+interface types {
+    // Tool annotations provide additional metadata about a tool's behavior
+    // https://modelcontextprotocol.io/docs/concepts/tools#available-tool-annotations
+    record tool-annotations {
+        // A human-readable title for the tool, useful for UI display
+        title: string,
+        // If true, indicates the tool does not modify its environment
+        // default: false
+        read-only-hint: bool,
+        // If true, the tool may perform destructive updates 
+        // (only meaningful when readOnlyHint is false)
+        // default: true
+        destructive-hint: bool,
+        // If true, calling the tool repeatedly with the same arguments 
+        // has no additional effect (only meaningful when readOnlyHint is false)
+        // default: false
+        idempotent-hint: bool,
+        // If true, the tool may interact with an “open world” of external entities
+        // default: true
+        open-world-hint: bool
+    }
+
+    record tool-schema {
+        schema-type: string,
+        properties: list<tuple<string, string>>,
+        required: list<string>, // List of property names that are required
+    }
+
+    record tool {
+        // Unique identifier for the tool
+        name: string,
+        // Optional human-readable name of the tool for display purposes.
+        title: string,
+        // Human-readable description of functionality
+        description: string,
+        // JSON Schema defining expected parameters
+        input-schema: tool-schema,
+        // Optional JSON Schema defining expected output structure
+        output-schema: tool-schema,
+        // optional properties describing tool behavior
+        annotations: tool-annotations
+    }
+
+    record text-content {
+        // Must be "text"
+        content-type: string,
+        // Tool result text
+        text: string
+    }
+
+    record image-content {
+        // Must be "image"
+        content-type: string,
+        // Base64-encoded data
+        data: list<u8>,
+        // MIME type of the image (e.g., "image/png")
+        mime-type: string
+    }
+
+    record audio-content {
+        // Must be "audio"
+        content-type: string,
+        // Base64-encoded audio data
+        data: list<u8>,
+        // MIME type of the audio (e.g., "audio/wav")
+        mime-type: string
+    }
+
+    record resource-link-content {
+        // Must be "resource_link"
+        content-type: string,
+        // URI of the resource
+        uri: string,
+        // name of the resource
+        name: string,
+        // description of the resource
+        description: string,
+        // MIME type of the resource (e.g., "text/x-rust")
+        mime-type: string
+    }
+
+    record embedded-resource-content {
+        // Must be "resource"
+        content-type: string,
+        resource-contents: resource-contents
+    }
+
+    // A resource can be either text or binary data.
+    variant resource-contents {
+        none,
+        text(text-resource-contents),
+        blob(blob-resource-contents)
+    }
+
+    record text-resource-contents {
+        // e.g. "file:///example.txt"
+        uri: string,
+        // e.g. "example.txt"
+        name: string,
+        // e.g. "Example Text File"
+        title: string,
+        // e.g. "text/plain"
+        mime-type: string,
+        // e.g. "Resource content"
+        text: string,
+    }
+
+    record blob-resource-contents {
+        // e.g. "file:///example.png"
+        uri: string,
+        // e.g. "example.png"
+        name: string,
+        // e.g. "Example Image"
+        title: string,
+        // e.g. "image/png"
+        mime-type: string,
+        // e.g. Base64-encoded binary data
+        blob: list<u8>,
+    }
+
+    // A content is [TextContent], [ImageContent], [AudioContent],
+    // [ResourceLink], or [EmbeddedResource].
+    variant content {
+        none,
+        text(text-content),
+        image(image-content),
+        audio(audio-content),
+        resource-link(resource-link-content),
+        resource-content(embedded-resource-content)
+    }
+
+    record call-tool-params {
+        // The name of the tool to call
+        name: string,
+        // The arguments to pass to the tool
+        arguments: list<tuple<string, string>>,
+    }
+
+    record call-tool-result {
+        // unstructured content in the form of multiple content items
+        content: list<content>,
+        // structured content in the form of a JSON string
+        structured-content: list<tuple<string, string>>,
+        // true for tool execution errors
+        is-error: bool,
+        meta: list<tuple<string, string>>,
+    }
+
+    record list-tools-result {
+        tools: list<tool>,
+        next-cursor: string,
+        meta: list<tuple<string, string>>,
+    }
+}
