@@ -1,4 +1,4 @@
-package hayride:http@0.0.60;
+package hayride:http@0.0.61;
 
 interface config {
     use types.{server-config, error-code};
