@@ -1,0 +1,22 @@
+package hayride:ai@0.0.61;
+
+interface runner {
+    use types.{message};
+    use agents.{agent};
+    use wasi:io/streams@0.2.0.{output-stream};
+
+    enum error-code {
+        invoke-error,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    invoke: func(message: message, agent: agent) -> result<list<message>, error>;
+    invoke-stream: func(message: message, writer: output-stream, agent: agent) -> result<_,error>;
+}
