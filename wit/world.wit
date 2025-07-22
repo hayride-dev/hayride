@@ -24,8 +24,6 @@ world hayride-ai {
     import hayride:ai/inference-stream@0.0.61;
     import hayride:ai/graph-stream@0.0.61;
 
-    import hayride:ai/agents@0.0.61;
-    import hayride:ai/model@0.0.61;
     import hayride:ai/model-repository@0.0.61;
     import hayride:ai/rag@0.0.61;
 }
