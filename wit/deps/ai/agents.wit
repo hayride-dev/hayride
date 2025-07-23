@@ -1,7 +1,6 @@
 package hayride:ai@0.0.61;
 
 interface agents {
-    use types.{message};
     use context.{context};
     use model.{format};
     use hayride:mcp/tools@0.0.61.{tools};
@@ -9,21 +8,13 @@ interface agents {
     use inference-stream.{graph-execution-context-stream};
     use wasi:io/streams@0.2.0.{output-stream};
 
-    enum error-code {
-        invoke-error,
-        unknown
-    }
-
-    resource error {
-        /// return the error code.
-        code: func() -> error-code;
-        /// errors can propagated with backend specific status through a string value.
-        data: func() -> string;
-    }
-
     resource agent {
         constructor(name: string, instruction: string, tools: tools, context: context, format: format, graph: graph-execution-context-stream);
-        invoke: func(input: message) -> result<list<message>, error>;
-        invoke-stream: func(message: message, writer: output-stream) -> result<_,error>;
-    }            
+        name: func() -> string;
+        instruction: func() -> string;
+        tools: func() -> tools;
+        context: func() -> context;
+        format: func() -> format;
+        graph: func() -> graph-execution-context-stream;
+    }
 }
