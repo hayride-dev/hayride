@@ -4,7 +4,8 @@ interface agents {
     use types.{message};
     use context.{context};
     use model.{format};
-    use hayride:mcp/tools@0.0.61.{tools, tool};
+    use hayride:mcp/tools@0.0.61.{tools};
+    use hayride:mcp/types@0.0.61.{tool, call-tool-params, call-tool-result};
     use graph-stream.{graph-stream};
     use inference-stream.{graph-execution-context-stream};
     use wasi:io/streams@0.2.0.{output-stream};
@@ -13,6 +14,7 @@ interface agents {
         capabilities-error,
         context-error,
         compute-error,
+        execute-error,
         unknown
     }
 
@@ -24,11 +26,12 @@ interface agents {
     }
 
     resource agent {
-        constructor(name: string, instruction: string, tools: tools, context: context, format: format, graph: graph-execution-context-stream);
+        constructor(name: string, instruction: string, format: format, graph: graph-execution-context-stream, tools: option<tools>, context: option<context>);
         name: func() -> string;
         instruction: func() -> string;
         capabilities: func() -> result<list<tool>, error>;
         context: func() -> result<list<message>, error>;
         compute: func(message: message) -> result<message, error>;
+        execute: func(params: call-tool-params) -> result<call-tool-result, error>;
     }
 }
