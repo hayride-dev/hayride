@@ -17,6 +17,6 @@ interface runner {
         data: func() -> string;
     }
 
-    invoke: func(message: message, agent: agent) -> result<list<message>, error>;
-    invoke-stream: func(message: message, writer: output-stream, agent: agent) -> result<_,error>;
+    invoke: func(message: message, agent: borrow<agent>) -> result<list<message>, error>;
+    invoke-stream: func(message: message, writer: borrow<output-stream>, agent: borrow<agent>) -> result<_,error>;
 }
