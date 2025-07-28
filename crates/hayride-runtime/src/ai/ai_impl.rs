@@ -1,15 +1,19 @@
 use super::ai::{AiImpl, AiView};
 use super::bindings::graph::{ExecutionTarget, GraphBuilder, GraphEncoding};
-use super::bindings::graph_stream::GraphStream;
-use super::bindings::inference_stream::TensorStream;
-use super::bindings::{
-    errors, graph, graph_stream, inference, inference_stream, model_repository, rag, tensor,
-    tensor_stream, transformer,
+use super::bindings::ai::graph_stream::GraphStream;
+use super::bindings::ai::inference_stream::TensorStream;
+use super::bindings::{errors, graph, inference, tensor};
+use super::bindings::ai::{
+    graph_stream, inference_stream, model_repository, rag,
+    tensor_stream, transformer, context,
 };
+use super::bindings::mcp::tools;
 use hayride_host_traits::ai::model::ErrorCode as ModelErrorCode;
 use hayride_host_traits::ai::rag::{
     Connection, Error as RagError, ErrorCode as RagErrorCode, RagOption, Transformer,
 };
+use hayride_host_traits::ai::context::{ErrorCode as ContextErrorCode, Context};
+use hayride_host_traits::ai::tools::{ErrorCode as ToolsErrorCode, Tools};
 use hayride_host_traits::ai::{Error, ErrorCode, ExecutionContext, Graph, Tensor};
 
 use anyhow::anyhow;
@@ -540,7 +544,7 @@ where
 {
     fn new(
         &mut self,
-        embedding: super::bindings::transformer::EmbeddingType,
+        embedding: super::bindings::ai::transformer::EmbeddingType,
         model: String,
         data_column: String,
         vector_column: String,
@@ -709,6 +713,135 @@ where
     }
 
     fn drop(&mut self, error: Resource<model_repository::Error>) -> Result<()> {
+        self.table().delete(error)?;
+        return Ok(());
+    }
+}
+
+impl<T> context::Host for AiImpl<T>
+where
+    T: AiView,
+{
+}
+
+impl<T> context::HostContext for AiImpl<T>
+where
+    T: AiView,
+{
+    fn new(&mut self,) -> Result<Resource<context::Context>> {
+        let ctx = Context{};
+        let id: Resource<context::Context> = self.table().push(ctx)?;
+        Ok(id)
+    }
+
+    fn push(&mut self, _self: Resource<context::Context>, _msg: context::Message) -> Result<std::result::Result<(), Resource<context::Error>>> {
+        let e = context::Error {
+            code: ContextErrorCode::Unknown,
+            data: anyhow::anyhow!("Context not implemented").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn messages(&mut self, _self: Resource<context::Context>) -> Result<std::result::Result<Vec<context::Message>, Resource<context::Error>>> {
+        let e = context::Error {
+            code: ContextErrorCode::Unknown,
+            data: anyhow::anyhow!("Context not implemented").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn drop(&mut self,rep:wasmtime::component::Resource<Context>) -> wasmtime::Result<()> {
+        self.table().delete(rep)?;
+        return Ok(());
+    }
+}
+
+impl<T> context::HostError for AiImpl<T>
+where
+    T: AiView,
+{
+    fn code(&mut self, error: Resource<context::Error>) -> Result<context::ErrorCode> {
+        let error = self.table().get(&error)?;
+        match error.code {
+            ContextErrorCode::MessageNotFound => Ok(context::ErrorCode::MessageNotFound),
+            ContextErrorCode::PushError => Ok(context::ErrorCode::PushError),
+            ContextErrorCode::UnexpectedMessageType => Ok(context::ErrorCode::UnexpectedMessageType),
+            ContextErrorCode::Unknown => Ok(context::ErrorCode::Unknown),
+        }
+    }
+
+    fn data(&mut self, error: Resource<context::Error>) -> Result<String> {
+        let error = self.table().get(&error)?;
+        return Ok(error.data.to_string());
+    }
+
+    fn drop(&mut self, error: Resource<context::Error>) -> Result<()> {
+        self.table().delete(error)?;
+        return Ok(());
+    }
+}
+
+impl<T> tools::Host for AiImpl<T>
+where
+    T: AiView,
+{
+}
+
+impl<T> tools::HostTools for AiImpl<T>
+where
+    T: AiView,
+{
+    fn new(&mut self) -> Result<Resource<Tools>> {
+        let tools = Tools {};
+        let id: Resource<Tools> = self.table().push(tools)?;
+        Ok(id)
+    }
+
+    fn call_tool(&mut self, _self: Resource<Tools>, _params: tools::CallToolParams,) -> Result<Result<tools::CallToolResult,Resource<hayride_host_traits::ai::tools::Error>>> {
+        let e = tools::Error {
+            code: ToolsErrorCode::Unknown,
+            data: anyhow::anyhow!("Tools not enabled").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn list_tools(&mut self, _self: Resource<Tools>, _cursor: String) -> Result<Result<tools::ListToolsResult, Resource<hayride_host_traits::ai::tools::Error>>> {
+        let e = tools::Error {
+            code: ToolsErrorCode::Unknown,
+            data: anyhow::anyhow!("Tools not enabled").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn drop(&mut self, id: Resource<Tools>) -> Result<()> {
+        self.table().delete(id)?;
+        Ok(())
+    }
+}
+
+impl<T> tools::HostError for AiImpl<T>
+where
+    T: AiView,
+{
+    fn code(&mut self, error: Resource<tools::Error>) -> Result<tools::ErrorCode> {
+        let error = self.table().get(&error)?;
+        match error.code {
+            ToolsErrorCode::ToolNotFound => Ok(tools::ErrorCode::ToolNotFound),
+            ToolsErrorCode::ToolCallFailed => Ok(tools::ErrorCode::ToolCallFailed),
+            ToolsErrorCode::Unknown => Ok(tools::ErrorCode::Unknown),
+        }
+    }
+
+    fn data(&mut self, error: Resource<tools::Error>) -> Result<String> {
+        let error = self.table().get(&error)?;
+        return Ok(error.data.to_string());
+    }
+
+    fn drop(&mut self, error: Resource<tools::Error>) -> Result<()> {
         self.table().delete(error)?;
         return Ok(());
     }
