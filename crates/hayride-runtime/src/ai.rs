@@ -22,12 +22,16 @@ where
     bindings::graph::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
     bindings::inference::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
     bindings::errors::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
-    bindings::tensor_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
-    bindings::graph_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
-    bindings::inference_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
-    bindings::rag::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
-    bindings::transformer::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
-    bindings::model_repository::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::ai::tensor_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::ai::graph_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::ai::inference_stream::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::ai::rag::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::ai::transformer::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::ai::model_repository::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+
+    // Context and Tools bindings are added as a fallback to satisfy the imports if they are needed.
+    bindings::ai::context::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::mcp::tools::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
 
     Ok(())
 }

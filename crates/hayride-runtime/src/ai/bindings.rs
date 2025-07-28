@@ -26,11 +26,15 @@ mod generated {
             "hayride:ai/transformer/transformer": hayride_host_traits::ai::rag::Transformer,
             "hayride:ai/rag/error": hayride_host_traits::ai::rag::Error,
             "hayride:ai/model-repository/error": hayride_host_traits::ai::model::Error,
+            "hayride:ai/context/context": hayride_host_traits::ai::context::Context,
+            "hayride:ai/context/error": hayride_host_traits::ai::context::Error,
+            "hayride:mcp/tools/tools": hayride_host_traits::ai::tools::Tools,
+            "hayride:mcp/tools/error": hayride_host_traits::ai::tools::Error,
         },
     });
 }
 
-pub use self::generated::hayride::ai::*;
+pub use self::generated::hayride::*;
 pub use self::generated::wasi::nn::*;
 
 // Convert from generated types to hayride_host_traits types
