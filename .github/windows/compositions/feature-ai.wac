@@ -1,0 +1,35 @@
+package hayride:ai-server;
+
+let model = new hayride:llama31@0.0.1 {...};
+let context = new hayride:inmemory@0.0.1 {...};
+
+let datetime = new hayride:datetime@0.0.1 {...};
+
+let tools = new hayride:default-tools@0.0.1 {
+  datetime: datetime.datetime,
+  ...
+};
+
+let store = new hayride-core:cfg@0.0.1 {...};
+let agents = new hayride:default-agent@0.0.1 {
+    context: context.context,
+    model: model.model,
+    tools: tools.tools,
+    ...
+};
+
+let runner = new hayride:default-runner@0.0.1 {
+    agents: agents.agents,
+    ...
+};
+
+let server = new hayride-core:ai-server@0.0.1 {
+    model: model.model,
+    context: context.context,
+    tools: tools.tools,
+    agents: agents.agents,
+    runner: runner.runner,
+    store: store.store,
+    ...
+};
+export server...;

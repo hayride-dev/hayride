@@ -9,6 +9,8 @@
     InstallerVersion="500"
     Compressed="yes">
     <FeatureRef Id="MainFeature"/>
+    <!-- The following line is required to embed the cab file -->
+    <MediaTemplate EmbedCab="yes" />
   </Package>
 
   <Fragment>
@@ -27,6 +29,14 @@
           <File Source="config.yaml" />
           <RemoveFolder Id="rmHayrideRoot" Directory="HayrideRoot" On="uninstall" />
         </Component>
+
+        <Directory Id="CompositionsDir" Name="compositions">
+          <Component Id="CompositionFiles" Guid="3efb93cf-aba0-4e47-9b29-12fa34451097">
+            <File Source="compositions/feature-ai.wac" />
+
+            <RemoveFolder Id="rmCompositionDir" Directory="CompositionsDir" On="uninstall" />
+          </Component>
+        </Directory>
 
         <Directory Id="RegistryDir" Name="registry">
           <Directory Id="MorphsDir" Name="morphs">
@@ -52,6 +62,7 @@
                   <File Source="hayride/0.0.1/default-tools.wasm" />
                   <File Source="hayride/0.0.1/inmemory.wasm" />
                   <File Source="hayride/0.0.1/llama31.wasm" />
+                  <File Source="hayride/0.0.1/datetime.wasm" />
 
                   <RemoveFolder Id="rmHayrideDir" Directory="HayrideDir" On="uninstall" />
                   <RemoveFolder Id="rmHayrideVersionDir" Directory="HayrideVersionDir" On="uninstall" />
@@ -84,6 +95,7 @@
     <Feature Id="MainFeature" Title="Hayride Installation" Level="1">
       <ComponentRef Id="BinaryFiles" />
       <ComponentRef Id="ConfigFile" />
+      <ComponentRef Id="CompositionFiles" />
       <ComponentRef Id="CoreFilesHayrideCore" />
       <ComponentRef Id="CoreFilesHayride" />
       <ComponentRef Id="UpdateUserPath" />
