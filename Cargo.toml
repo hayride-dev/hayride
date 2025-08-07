@@ -40,7 +40,7 @@ hayride-llama = { path = "crates/hayride-llama" }
 hayride-wac = { path = "crates/hayride-wac" }
 hayride-core = { path = "crates/hayride-core" }
 
-hayride-llama-rs-sys = "0.0.4"
+hayride-llama-rs-sys = { path = "../llama-rs/hayride-llama-rs-sys" }
 
 anyhow = "1.0.91"
 async-trait = "0.1.86"
