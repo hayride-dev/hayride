@@ -549,6 +549,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
+                    self.envs.clone()
                 ));
                 let listener = TcpListener::bind(address).await?;
 
@@ -598,6 +599,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
+                    self.envs.clone()
                 ));
                 let listener = TcpListener::bind(address).await?;
 

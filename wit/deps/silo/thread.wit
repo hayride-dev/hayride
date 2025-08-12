@@ -1,4 +1,4 @@
-package hayride:silo@0.0.61;
+package hayride:silo@0.0.62;
 
 interface threads {
     use types.{err-no, thread-metadata, thread-status};
@@ -8,7 +8,7 @@ interface threads {
         wait: func() -> result<list<u8>, err-no>;
     }
 
-    spawn: func(pkg: string, function: string, args: list<string>) -> result<thread, err-no>;
+    spawn: func(pkg: string, function: string, args: list<string>, envs: list<tuple<string, string>>) -> result<thread, err-no>;
     status: func(id: string) -> result<thread-metadata, err-no>; // get metadata about a single thread
     kill: func(id: string) -> result<_, err-no>;
     group: func() -> result<list<thread-metadata>, err-no>; // list of running threads

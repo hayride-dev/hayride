@@ -1,0 +1,33 @@
+
+package hayride:mcp@0.0.62;
+
+interface auth {
+    enum error-code {
+        auth-url-failed,
+        registration-failed,
+        exchange-code-failed,
+        validate-failed,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    // provider allows for proxy authentication
+    resource provider {
+        // Construct a provider with the given config key/value pairs
+        constructor();
+        // Return the url to use for authorization
+        auth-url: func() -> result<string, error>;
+        // Dynamic Registration for a new client should use the provided data for a registration request and return client info
+        registration: func(data: list<u8>) -> result<list<u8>, error>;
+        // Exchange code for token, takes the body of the token request and returns auth token
+        exchange-code: func(data: list<u8>) -> result<list<u8>, error>;
+        // Validate the bearer token, returning true if valid
+        validate: func(token: string) -> result<bool, error>;
+    }
+}

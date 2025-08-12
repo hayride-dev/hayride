@@ -42,6 +42,7 @@ pub struct WebsocketServer {
     registry_path: String,
     model_path: Option<String>,
     args: Vec<String>,
+    envs: Vec<(String, String)>,
 }
 
 impl WebsocketServer {
@@ -54,6 +55,7 @@ impl WebsocketServer {
         registry_path: String,
         model_path: Option<String>,
         args: Vec<String>,
+        envs: Vec<(String, String)>,
     ) -> Self {
         Self {
             id,
@@ -64,6 +66,7 @@ impl WebsocketServer {
             registry_path,
             model_path,
             args,
+            envs,
         }
     }
 
@@ -78,7 +81,7 @@ impl WebsocketServer {
                 self.out_dir.clone(),
                 self.id,
                 false,
-                &[] as &[(&str, &str)],
+                &self.envs,
             )?;
             let mut store: wasmtime::Store<Host> = wasmtime::Store::new(
                 &self.ws_pre.engine(),

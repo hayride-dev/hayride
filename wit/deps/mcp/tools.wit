@@ -1,8 +1,8 @@
 
-package hayride:mcp@0.0.61;
+package hayride:mcp@0.0.62;
 
 interface tools {
-    use types.{tool, content, call-tool-params, call-tool-result, list-tools-result};
+    use types.{call-tool-params, call-tool-result, list-tools-result};
 
     enum error-code {
         tool-call-failed,

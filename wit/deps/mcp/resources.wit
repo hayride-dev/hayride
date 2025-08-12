@@ -1,0 +1,26 @@
+
+package hayride:mcp@0.0.62;
+
+interface resources {
+    use types.{read-resource-params, read-resource-result, list-resources-result, list-resource-templates-result};
+
+    enum error-code {
+        resource-list-failed,
+        resource-not-found,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    resource resources {
+        constructor();
+        list-resources: func(cursor: string) -> result<list-resources-result, error>;
+        list-templates: func(cursor: string) -> result<list-resource-templates-result, error>;
+        read-resources: func(params: read-resource-params) -> result<read-resource-result, error>;
+    }
+}
