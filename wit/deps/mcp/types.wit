@@ -1,4 +1,4 @@
-package hayride:mcp@0.0.61;
+package hayride:mcp@0.0.62;
 
 interface types {
     // Tool annotations provide additional metadata about a tool's behavior
@@ -39,6 +39,38 @@ interface types {
         input-schema: tool-schema,
         // Optional JSON Schema defining expected output structure
         output-schema: tool-schema,
+        // optional properties describing tool behavior
+        annotations: tool-annotations
+    }
+
+    record mcp-resource {
+        // The name of the resource
+        name: string,
+        // A human-readable title for the resource, useful for UI display
+        title: string,
+        // A human-readable description of the resource
+        description: string,
+        // The URI of the resource
+        uri: string,
+        // The MIME type of the resource
+        mime-type: string,
+        // The size of the raw resource contents in bytes
+        size: u64,
+        // optional properties describing tool behavior
+        annotations: tool-annotations
+    }
+
+    record mcp-resource-template {
+        // The name of the resource template
+        name: string,
+        // A human-readable title for the resource template, useful for UI display
+        title: string,
+        // A human-readable description of the resource template
+        description: string,
+        // A URI template (RFC 6570) that can be used to construct resource URIs
+        uri-template: string,
+        // The MIME type of the resource template
+        mime-type: string,
         // optional properties describing tool behavior
         annotations: tool-annotations
     }
@@ -150,6 +182,80 @@ interface types {
 
     record list-tools-result {
         tools: list<tool>,
+        next-cursor: string,
+        meta: list<tuple<string, string>>,
+    }
+
+    record prompt {
+        // Name intended for programmatic use
+        name: string,
+        // A human-readable title for the prompt, useful for UI display
+        title: string,
+         // An optional description of what this prompt provides
+        description: string,
+        // A list of arguments to use for templating the prompt
+        arguments: list<prompt-argument>,
+        meta: list<tuple<string, string>>,
+    }
+
+    record prompt-argument {
+        // The name of the argument
+        name: string,
+        // A human-readable title for the argument, useful for UI display
+        title: string,
+        // A human-readable description of the argument
+        description: string,
+        // Whether the argument must be provided
+        required: bool,
+    }
+
+    enum prompt-role {
+        user,
+        assistant,
+        unknown
+    }
+
+    record prompt-message {
+        role: prompt-role,
+        content: content,
+    }
+
+    record get-prompt-params {
+        // The name of the prompt or prompt template
+        name: string,
+        // Arguments to use for templating the prompt
+        arguments: list<tuple<string, string>>,
+    }
+
+    record get-prompt-result {
+        description: string,
+        messages: list<prompt-message>,
+        meta: list<tuple<string, string>>,
+    }
+
+    record list-prompts-result {
+        prompts: list<prompt>,
+        next-cursor: string,
+        meta: list<tuple<string, string>>,
+    }
+
+    record read-resource-params {
+        uri: string,
+    }
+
+    record read-resource-result {
+        // The resource contents
+        contents: list<resource-contents>,
+    }
+
+    record list-resources-result {
+        resources: list<mcp-resource>,
+        next-cursor: string,
+        meta: list<tuple<string, string>>,
+    }
+
+    record list-resource-templates-result {
+        templates: list<mcp-resource-template>,
         next-cursor: string,
         meta: list<tuple<string, string>>,
     }

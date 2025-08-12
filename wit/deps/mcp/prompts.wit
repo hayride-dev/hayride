@@ -1,0 +1,25 @@
+
+package hayride:mcp@0.0.62;
+
+interface prompts {
+    use types.{get-prompt-params, get-prompt-result, list-prompts-result};
+
+    enum error-code {
+        prompt-list-failed,
+        prompt-not-found,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    resource prompts {
+        constructor();
+        list-prompts: func(cursor: string) -> result<list-prompts-result, error>;
+        get-prompt: func(params: get-prompt-params) -> result<get-prompt-result, error>;
+    }
+}

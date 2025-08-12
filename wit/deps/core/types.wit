@@ -1,13 +1,14 @@
-package hayride:core@0.0.61;
+package hayride:core@0.0.62;
 
 interface types {
-    use hayride:silo/threads@0.0.61.{thread-metadata, thread-status};
-    use hayride:ai/types@0.0.61.{message};
+    use hayride:silo/threads@0.0.62.{thread-metadata, thread-status};
+    use hayride:ai/types@0.0.62.{message};
 
     record cast {
         name: string,
         function: string,
         args: list<string>,
+        envs: list<tuple<string, string>>,
     }
 
     record generate {

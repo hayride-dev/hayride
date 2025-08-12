@@ -1,11 +1,11 @@
-package hayride:ai@0.0.61;
+package hayride:ai@0.0.62;
 
 interface agents {
     use types.{message};
     use context.{context};
     use model.{format};
-    use hayride:mcp/tools@0.0.61.{tools};
-    use hayride:mcp/types@0.0.61.{tool, call-tool-params, call-tool-result};
+    use hayride:mcp/tools@0.0.62.{tools};
+    use hayride:mcp/types@0.0.62.{tool, call-tool-params, call-tool-result};
     use graph-stream.{graph-stream};
     use inference-stream.{graph-execution-context-stream};
     use wasi:io/streams@0.2.0.{output-stream};

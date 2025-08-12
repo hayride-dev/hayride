@@ -200,6 +200,7 @@ where
         morph: String,
         function: String,
         mut args: Vec<String>,
+        envs: Vec<(String, String)>
     ) -> Result<Resource<Thread>, threads::ErrNo> {
         log::debug!(
             "executing spawn: {} with function: {}, and args: {:?}",
@@ -246,6 +247,7 @@ where
                 .silo_enabled(false)
                 .wac_enabled(true)
                 .wasi_enabled(true)
+                .envs(envs.clone())
                 .build()
                 .map_err(|_err| {
                     return ErrNo::EngineError;

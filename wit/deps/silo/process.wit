@@ -1,4 +1,4 @@
-package hayride:silo@0.0.61;
+package hayride:silo@0.0.62;
 
 interface process {
     use types.{err-no};

@@ -24,6 +24,7 @@ pub struct Server {
     registry_path: String,
     model_path: Option<String>,
     args: Vec<String>,
+    envs: Vec<(String, String)>,
 }
 
 impl Server {
@@ -36,6 +37,7 @@ impl Server {
         registry_path: String,
         model_path: Option<String>,
         args: Vec<String>,
+        envs: Vec<(String, String)>,
     ) -> Self {
         Self {
             id,
@@ -46,6 +48,7 @@ impl Server {
             registry_path,
             model_path,
             args,
+            envs,
         }
     }
 
@@ -58,7 +61,7 @@ impl Server {
             self.out_dir.clone(),
             self.id,
             false,
-            &[] as &[(&str, &str)],
+            &self.envs,
         )?;
         let mut store: wasmtime::Store<Host> = wasmtime::Store::new(
             &self.pre.engine(),
