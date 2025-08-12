@@ -509,7 +509,8 @@ impl WasmtimeEngine {
                     HayrideServerPre::new(linker.instantiate_pre(&component)?)?;
 
                 // Get config from server instance
-                let mut store = self.create_store(args, silo_ctx.clone(), core_ctx.clone(), false)?;
+                let mut store =
+                    self.create_store(args, silo_ctx.clone(), core_ctx.clone(), false)?;
                 let server = pre.instantiate_async(&mut store).await?;
                 let config = match server.hayride_http_config().call_get(store).await? {
                     Ok(c) => {
@@ -549,7 +550,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
-                    self.envs.clone()
+                    self.envs.clone(),
                 ));
                 let listener = TcpListener::bind(address).await?;
 
@@ -599,7 +600,7 @@ impl WasmtimeEngine {
                     self.registry_path.clone(),
                     self.model_path.clone(),
                     args.iter().map(|s| s.as_ref().to_string()).collect(),
-                    self.envs.clone()
+                    self.envs.clone(),
                 ));
                 let listener = TcpListener::bind(address).await?;
 

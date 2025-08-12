@@ -200,7 +200,7 @@ where
         morph: String,
         function: String,
         mut args: Vec<String>,
-        envs: Vec<(String, String)>
+        envs: Vec<(String, String)>,
     ) -> Result<Resource<Thread>, threads::ErrNo> {
         log::debug!(
             "executing spawn: {} with function: {}, and args: {:?}",

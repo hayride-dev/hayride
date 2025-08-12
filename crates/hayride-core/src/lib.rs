@@ -12,7 +12,8 @@ impl VersionInner for VersionBackend {
         let response = match client
             .get("https://api.github.com/repos/hayride-dev/releases/releases/latest")
             .header(reqwest::header::USER_AGENT, "Hayride")
-            .send() {
+            .send()
+        {
             Ok(resp) => resp,
             Err(_) => {
                 return Err(ErrorCode::GetVersionFailed);

@@ -27,9 +27,10 @@ world hayride-ai {
     import hayride:ai/model-repository@0.0.62;
     import hayride:ai/rag@0.0.62;
 
-    // Host satisfies context and tools as a fallback.
+    // Host satisfies context, tools, and auth as a fallback.
     import hayride:ai/context@0.0.62;
     import hayride:mcp/tools@0.0.62;
+    import hayride:mcp/auth@0.0.62;
 }
 
 world hayride-core {

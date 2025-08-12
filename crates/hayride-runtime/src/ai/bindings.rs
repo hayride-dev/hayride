@@ -28,8 +28,10 @@ mod generated {
             "hayride:ai/model-repository/error": hayride_host_traits::ai::model::Error,
             "hayride:ai/context/context": hayride_host_traits::ai::context::Context,
             "hayride:ai/context/error": hayride_host_traits::ai::context::Error,
-            "hayride:mcp/tools/tools": hayride_host_traits::ai::tools::Tools,
-            "hayride:mcp/tools/error": hayride_host_traits::ai::tools::Error,
+            "hayride:mcp/tools/tools": hayride_host_traits::mcp::tools::Tools,
+            "hayride:mcp/tools/error": hayride_host_traits::mcp::tools::Error,
+            "hayride:mcp/auth/provider": hayride_host_traits::mcp::auth::Provider,
+            "hayride:mcp/auth/error": hayride_host_traits::mcp::auth::Error,
         },
     });
 }

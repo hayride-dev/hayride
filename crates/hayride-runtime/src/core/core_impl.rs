@@ -15,9 +15,10 @@ where
     fn latest(&mut self) -> Result<Result<String, Resource<version::Error>>> {
         let ctx = self.ctx();
         let cache = ctx.get_version_cache();
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| {
-            anyhow!("Error getting current time: {}", e)
-        })?.as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| anyhow!("Error getting current time: {}", e))?
+            .as_secs();
 
         // Only check the version if it's been more than an hour since the last check
         let should_check = match cache.last_check {
@@ -38,7 +39,7 @@ where
                 // Store the new version in the cache
                 ctx.set_version_cache(Some(now), Some(version.clone()));
                 Ok(Ok(version))
-            },
+            }
             Err(e) => {
                 let error = Error {
                     code: e,
