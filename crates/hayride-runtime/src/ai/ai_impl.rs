@@ -1,20 +1,20 @@
 use super::ai::{AiImpl, AiView};
-use super::bindings::graph::{ExecutionTarget, GraphBuilder, GraphEncoding};
 use super::bindings::ai::graph_stream::GraphStream;
 use super::bindings::ai::inference_stream::TensorStream;
-use super::bindings::{errors, graph, inference, tensor};
 use super::bindings::ai::{
-    graph_stream, inference_stream, model_repository, rag,
-    tensor_stream, transformer, context,
+    context, graph_stream, inference_stream, model_repository, rag, tensor_stream, transformer,
 };
-use super::bindings::mcp::tools;
+use super::bindings::graph::{ExecutionTarget, GraphBuilder, GraphEncoding};
+use super::bindings::mcp::{auth, tools};
+use super::bindings::{errors, graph, inference, tensor};
+use hayride_host_traits::ai::context::{Context, ErrorCode as ContextErrorCode};
 use hayride_host_traits::ai::model::ErrorCode as ModelErrorCode;
 use hayride_host_traits::ai::rag::{
     Connection, Error as RagError, ErrorCode as RagErrorCode, RagOption, Transformer,
 };
-use hayride_host_traits::ai::context::{ErrorCode as ContextErrorCode, Context};
-use hayride_host_traits::ai::tools::{ErrorCode as ToolsErrorCode, Tools};
 use hayride_host_traits::ai::{Error, ErrorCode, ExecutionContext, Graph, Tensor};
+use hayride_host_traits::mcp::auth::{ErrorCode as AuthErrorCode, Provider};
+use hayride_host_traits::mcp::tools::{ErrorCode as ToolsErrorCode, Tools};
 
 use anyhow::anyhow;
 use wasmtime::component::Resource;
@@ -718,23 +718,23 @@ where
     }
 }
 
-impl<T> context::Host for AiImpl<T>
-where
-    T: AiView,
-{
-}
+impl<T> context::Host for AiImpl<T> where T: AiView {}
 
 impl<T> context::HostContext for AiImpl<T>
 where
     T: AiView,
 {
-    fn new(&mut self,) -> Result<Resource<context::Context>> {
-        let ctx = Context{};
+    fn new(&mut self) -> Result<Resource<context::Context>> {
+        let ctx = Context {};
         let id: Resource<context::Context> = self.table().push(ctx)?;
         Ok(id)
     }
 
-    fn push(&mut self, _self: Resource<context::Context>, _msg: context::Message) -> Result<std::result::Result<(), Resource<context::Error>>> {
+    fn push(
+        &mut self,
+        _self: Resource<context::Context>,
+        _msg: context::Message,
+    ) -> Result<std::result::Result<(), Resource<context::Error>>> {
         let e = context::Error {
             code: ContextErrorCode::Unknown,
             data: anyhow::anyhow!("Context not implemented").into(),
@@ -743,7 +743,10 @@ where
         return Ok(Err(r));
     }
 
-    fn messages(&mut self, _self: Resource<context::Context>) -> Result<std::result::Result<Vec<context::Message>, Resource<context::Error>>> {
+    fn messages(
+        &mut self,
+        _self: Resource<context::Context>,
+    ) -> Result<std::result::Result<Vec<context::Message>, Resource<context::Error>>> {
         let e = context::Error {
             code: ContextErrorCode::Unknown,
             data: anyhow::anyhow!("Context not implemented").into(),
@@ -752,7 +755,7 @@ where
         return Ok(Err(r));
     }
 
-    fn drop(&mut self,rep:wasmtime::component::Resource<Context>) -> wasmtime::Result<()> {
+    fn drop(&mut self, rep: wasmtime::component::Resource<Context>) -> wasmtime::Result<()> {
         self.table().delete(rep)?;
         return Ok(());
     }
@@ -767,7 +770,9 @@ where
         match error.code {
             ContextErrorCode::MessageNotFound => Ok(context::ErrorCode::MessageNotFound),
             ContextErrorCode::PushError => Ok(context::ErrorCode::PushError),
-            ContextErrorCode::UnexpectedMessageType => Ok(context::ErrorCode::UnexpectedMessageType),
+            ContextErrorCode::UnexpectedMessageType => {
+                Ok(context::ErrorCode::UnexpectedMessageType)
+            }
             ContextErrorCode::Unknown => Ok(context::ErrorCode::Unknown),
         }
     }
@@ -783,11 +788,7 @@ where
     }
 }
 
-impl<T> tools::Host for AiImpl<T>
-where
-    T: AiView,
-{
-}
+impl<T> tools::Host for AiImpl<T> where T: AiView {}
 
 impl<T> tools::HostTools for AiImpl<T>
 where
@@ -799,7 +800,12 @@ where
         Ok(id)
     }
 
-    fn call_tool(&mut self, _self: Resource<Tools>, _params: tools::CallToolParams,) -> Result<Result<tools::CallToolResult,Resource<hayride_host_traits::ai::tools::Error>>> {
+    fn call_tool(
+        &mut self,
+        _self: Resource<Tools>,
+        _params: tools::CallToolParams,
+    ) -> Result<Result<tools::CallToolResult, Resource<hayride_host_traits::mcp::tools::Error>>>
+    {
         let e = tools::Error {
             code: ToolsErrorCode::Unknown,
             data: anyhow::anyhow!("Tools not enabled").into(),
@@ -808,7 +814,12 @@ where
         return Ok(Err(r));
     }
 
-    fn list_tools(&mut self, _self: Resource<Tools>, _cursor: String) -> Result<Result<tools::ListToolsResult, Resource<hayride_host_traits::ai::tools::Error>>> {
+    fn list_tools(
+        &mut self,
+        _self: Resource<Tools>,
+        _cursor: String,
+    ) -> Result<Result<tools::ListToolsResult, Resource<hayride_host_traits::mcp::tools::Error>>>
+    {
         let e = tools::Error {
             code: ToolsErrorCode::Unknown,
             data: anyhow::anyhow!("Tools not enabled").into(),
@@ -842,6 +853,101 @@ where
     }
 
     fn drop(&mut self, error: Resource<tools::Error>) -> Result<()> {
+        self.table().delete(error)?;
+        return Ok(());
+    }
+}
+
+impl<T> auth::Host for AiImpl<T> where T: AiView {}
+
+impl<T> auth::HostProvider for AiImpl<T>
+where
+    T: AiView,
+{
+    fn new(&mut self) -> Result<Resource<Provider>> {
+        let provider = auth::Provider {};
+        let id: Resource<auth::Provider> = self.table().push(provider)?;
+        Ok(id)
+    }
+
+    fn auth_url(
+        &mut self,
+        _self: Resource<Provider>,
+    ) -> Result<Result<String, Resource<auth::Error>>> {
+        let e = auth::Error {
+            code: AuthErrorCode::Unknown,
+            data: anyhow::anyhow!("Auth not implemented").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn registration(
+        &mut self,
+        _self: Resource<Provider>,
+        _data: Vec<u8>,
+    ) -> Result<Result<Vec<u8>, Resource<auth::Error>>> {
+        let e = auth::Error {
+            code: AuthErrorCode::Unknown,
+            data: anyhow::anyhow!("Auth not implemented").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn exchange_code(
+        &mut self,
+        _self: Resource<Provider>,
+        _data: Vec<u8>,
+    ) -> Result<Result<Vec<u8>, Resource<auth::Error>>> {
+        let e = auth::Error {
+            code: AuthErrorCode::Unknown,
+            data: anyhow::anyhow!("Auth not implemented").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn validate(
+        &mut self,
+        _self: Resource<Provider>,
+        _token: String,
+    ) -> Result<Result<bool, Resource<auth::Error>>> {
+        let e = auth::Error {
+            code: AuthErrorCode::Unknown,
+            data: anyhow::anyhow!("Auth not implemented").into(),
+        };
+        let r = self.table().push(e)?;
+        return Ok(Err(r));
+    }
+
+    fn drop(&mut self, id: Resource<auth::Provider>) -> Result<()> {
+        self.table().delete(id)?;
+        Ok(())
+    }
+}
+
+impl<T> auth::HostError for AiImpl<T>
+where
+    T: AiView,
+{
+    fn code(&mut self, error: Resource<auth::Error>) -> Result<auth::ErrorCode> {
+        let error = self.table().get(&error)?;
+        match error.code {
+            AuthErrorCode::AuthUrlFailed => Ok(auth::ErrorCode::AuthUrlFailed),
+            AuthErrorCode::RegistrationFailed => Ok(auth::ErrorCode::RegistrationFailed),
+            AuthErrorCode::ExchangeCodeFailed => Ok(auth::ErrorCode::ExchangeCodeFailed),
+            AuthErrorCode::ValidateFailed => Ok(auth::ErrorCode::ValidateFailed),
+            AuthErrorCode::Unknown => Ok(auth::ErrorCode::Unknown),
+        }
+    }
+
+    fn data(&mut self, error: Resource<auth::Error>) -> Result<String> {
+        let error = self.table().get(&error)?;
+        return Ok(error.data.to_string());
+    }
+
+    fn drop(&mut self, error: Resource<auth::Error>) -> Result<()> {
         self.table().delete(error)?;
         return Ok(());
     }

@@ -76,13 +76,8 @@ impl WebsocketServer {
     ) -> Result<hyper::Response<HyperOutgoingBody>> {
         // Check if this is a websocket request and handle it
         if hyper_tungstenite::is_upgrade_request(&req) {
-            let wasi_ctx = create_wasi_ctx(
-                &self.args,
-                self.out_dir.clone(),
-                self.id,
-                false,
-                &self.envs,
-            )?;
+            let wasi_ctx =
+                create_wasi_ctx(&self.args, self.out_dir.clone(), self.id, false, &self.envs)?;
             let mut store: wasmtime::Store<Host> = wasmtime::Store::new(
                 &self.ws_pre.engine(),
                 Host {

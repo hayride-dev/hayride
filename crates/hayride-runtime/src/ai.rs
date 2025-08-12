@@ -29,9 +29,10 @@ where
     bindings::ai::transformer::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
     bindings::ai::model_repository::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
 
-    // Context and Tools bindings are added as a fallback to satisfy the imports if they are needed.
+    // Context, Tools, and Auth bindings are added as a fallback to satisfy the imports if they are needed.
     bindings::ai::context::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
     bindings::mcp::tools::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
+    bindings::mcp::auth::add_to_linker::<T, HasAi<T>>(l, |x| AiImpl(x))?;
 
     Ok(())
 }

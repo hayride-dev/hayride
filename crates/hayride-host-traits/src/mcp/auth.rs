@@ -1,5 +1,5 @@
-pub mod context;
+pub mod auth;
 pub mod errors;
 
-pub use context::Context;
+pub use auth::Provider;
 pub use errors::{Error, ErrorCode};
