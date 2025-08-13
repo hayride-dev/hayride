@@ -60,6 +60,7 @@
                 <Component Id="CoreFilesHayride" Guid="b779f4d9-2ee9-45a3-8c58-46f5fc2ccb20">
                   <File Source="hayride/0.0.1/default-agent.wasm" />
                   <File Source="hayride/0.0.1/default-tools.wasm" />
+                  <File Source="hayride/0.0.1/default-runner.wasm" />
                   <File Source="hayride/0.0.1/inmemory.wasm" />
                   <File Source="hayride/0.0.1/llama31.wasm" />
                   <File Source="hayride/0.0.1/datetime.wasm" />
