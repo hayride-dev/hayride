@@ -1,9 +1,12 @@
-package hayride:ai@0.0.62;
+package hayride:ai@0.0.63;
 
 interface runner {
     use types.{message};
     use agents.{agent};
+    use model.{format};
     use wasi:io/streams@0.2.0.{output-stream};
+    use tensor-stream.{tensor-stream};
+    use inference-stream.{graph-execution-context-stream};
 
     enum error-code {
         invoke-error,
@@ -17,6 +20,5 @@ interface runner {
         data: func() -> string;
     }
 
-    invoke: func(message: message, agent: borrow<agent>) -> result<list<message>, error>;
-    invoke-stream: func(message: message, writer: borrow<output-stream>, agent: borrow<agent>) -> result<_,error>;
+    invoke: func(message: message, agent: borrow<agent>, format: borrow<format>, graph: borrow<graph-execution-context-stream>, output-stream: option<borrow<output-stream>>) -> result<list<message>, error>;
 }

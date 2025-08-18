@@ -1,4 +1,4 @@
-package hayride:core@0.0.62;
+package hayride:core@0.0.63;
 
 interface version {
     enum error-code {
