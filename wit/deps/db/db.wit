@@ -1,0 +1,119 @@
+package hayride:db@0.0.62;
+
+interface db {
+
+    enum error-code {
+        connection-failed,
+        query-failed,
+        execute-failed,
+        close-failed,
+        not-enabled,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can be propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    /// Array element types (non-recursive)
+    variant array-element {
+        /// NULL value
+        null,
+        boolean(bool),
+        int16(s16),
+        int32(s32),
+        int64(s64),
+        float32(f32),
+        float64(f64),
+        text(string),
+        bytes(list<u8>),
+        date(string),
+        time(string),
+        timestamp(string),
+        timestamptz(string),
+        uuid(string),
+        json(list<u8>),
+        /// Numeric/decimal value - string representation for precision
+        numeric(string),
+        /// DB-specific types as raw string
+        custom(string),
+    }
+
+    /// Database value types
+    variant db-value {
+        /// NULL value
+        null,
+        boolean(bool),
+        int16(s16),
+        int32(s32),
+        int64(s64),
+        float32(f32),
+        float64(f64),
+        text(string),
+        bytes(list<u8>),
+        date(string),
+        time(string),
+        timestamp(string),
+        timestamptz(string),
+        uuid(string),
+        json(list<u8>),
+        /// Array element types (one-dimensional)
+        array(list<array-element>),
+        /// Numeric/decimal value - string representation for precision
+        numeric(string),
+        /// DB-specific types as raw string
+        custom(string),
+    }
+
+    type row = list<db-value>;
+
+    record column-info {
+        name: string,
+        /// OID type identifier
+        type-oid: option<u32>,
+        /// Human-readable type name
+        type-name: option<string>,
+        /// Whether the column can be NULL
+        nullable: option<bool>,
+    }
+
+    record query-result {
+        columns: list<column-info>,
+        rows: list<row>,
+    }
+
+    resource connection {
+        query: func(statement: string, params: list<db-value>) -> result<query-result, error>;
+        // execute a statement returning the number of affected rows
+        execute: func(statement: string, params: list<db-value>) -> result<u64, error>;
+        /// Close the connection
+        close: func() -> result<_, error>;
+    }
+
+    record connection-config {
+        /// Database host
+        host: string,
+        /// Database port
+        port: option<u16>,
+        /// Database name
+        database: string,
+        /// Username
+        username: string,
+        /// Password
+        password: option<string>,
+        /// SSL mode: disable, require, verify-ca, verify-full
+        ssl-mode: option<string>,
+        /// Connection timeout in seconds
+        connect-timeout: option<u32>,
+        /// Additional connection parameters
+        params: option<list<tuple<string, string>>>,
+    }
+
+    /// Connect to a database using structured configuration
+    connect: func(config: connection-config) -> result<connection, error>;
+    /// Connect to a database using connection string
+    connect-string: func(connection-string: string) -> result<connection, error>;
+}

@@ -5,6 +5,7 @@ pub mod engine;
 pub mod server;
 pub mod silo;
 pub mod wac;
+pub mod db;
 pub mod websocket;
 
 use crate::ai::{AiCtx, AiView};

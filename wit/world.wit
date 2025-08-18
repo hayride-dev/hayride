@@ -49,3 +49,7 @@ world hayride-silo {
 world hayride-wac {
     import hayride:wac/wac@0.0.62;
 }
+
+world hayride-db {
+    import hayride:db/db@0.0.62;
+}

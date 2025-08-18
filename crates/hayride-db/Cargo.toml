@@ -1,0 +1,15 @@
+[package]
+name = "hayride-db"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true, features = ["postgres"] }
+hayride-utils = { workspace = true }
+
+anyhow = { workspace = true }
+native-tls = { workspace = true }
+postgres-native-tls = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio-postgres = { workspace = true }
