@@ -7,6 +7,8 @@ interface runner {
     use wasi:io/streams@0.2.0.{output-stream};
     use tensor-stream.{tensor-stream};
     use inference-stream.{graph-execution-context-stream};
+    use graph-stream.{graph-stream};
+    use wasi:http/types@0.2.0.{fields, response-outparam, outgoing-response, outgoing-body};
 
     enum error-code {
         invoke-error,
