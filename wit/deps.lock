@@ -1,8 +1,8 @@
 [ai]
 url = "https://github.com/hayride-dev/coven/releases/download/v0.0.63/hayride_ai_v0.0.63.tar.gz"
-sha256 = "91c2fb9fc21e4fc928351f42e8ff9a5dda3370384b03613d0f327e7604fa3969"
-sha512 = "c35844a45da8daf98a24ba98c309d63b8d9eda7e12786a34e713241913fd3e67336b987ab27f3219ccdee4fd022226e5571eb5b533075dbe3be1da3f762f41a8"
-deps = ["io", "wasi-nn"]
+sha256 = "85209217f4e9e02325a6bb51bf0fc5af59f42d754018c02a4ab731de7300607b"
+sha512 = "e1670b4033a3afde7760e26f5d952b80b4fde603fa4acde1efd59c7c9b8effddf9c5d9151738b8658e3b25210c5206fdda09158ce02dfd392bcc3b49eaecd3ac"
+deps = ["cli", "clocks", "filesystem", "io", "random", "sockets", "wasi-nn"]
 
 [cli]
 sha256 = "285865a31d777181b075f39e92bcfe59c89cd6bacce660be1b9a627646956258"
