@@ -1,51 +1,51 @@
 package hayride:runtime@0.0.1;
 
 world hayride-server {
-    include hayride:wasip2/imports@0.0.63;
+    include hayride:wasip2/imports@0.0.64;
     
     // exports
     export wasi:http/incoming-handler@0.2.0;
-    export hayride:http/config@0.0.63;
+    export hayride:http/config@0.0.64;
 }
 
 world hayride-cli {
-    include hayride:wasip2/imports@0.0.63;
-    include hayride:wasip2/exports@0.0.63;
+    include hayride:wasip2/imports@0.0.64;
+    include hayride:wasip2/exports@0.0.64;
 }
 
 world hayride-ws {
-    export hayride:socket/websocket@0.0.63;
+    export hayride:socket/websocket@0.0.64;
 }
 
 world hayride-ai {
     include wasi:nn/ml@0.2.0-rc-2024-10-28;
 
-    import hayride:ai/tensor-stream@0.0.63;
-    import hayride:ai/inference-stream@0.0.63;
-    import hayride:ai/graph-stream@0.0.63;
+    import hayride:ai/tensor-stream@0.0.64;
+    import hayride:ai/inference-stream@0.0.64;
+    import hayride:ai/graph-stream@0.0.64;
 
-    import hayride:ai/model-repository@0.0.63;
-    import hayride:ai/rag@0.0.63;
+    import hayride:ai/model-repository@0.0.64;
+    import hayride:ai/rag@0.0.64;
 
     // Host satisfies context, tools, and auth as a fallback.
-    import hayride:ai/context@0.0.63;
-    import hayride:mcp/tools@0.0.63;
-    import hayride:mcp/auth@0.0.63;
+    import hayride:ai/context@0.0.64;
+    import hayride:mcp/tools@0.0.64;
+    import hayride:mcp/auth@0.0.64;
 }
 
 world hayride-core {
-    import hayride:core/version@0.0.63;
+    import hayride:core/version@0.0.64;
 }
 
 world hayride-api {
-    import hayride:core/types@0.0.63;
+    import hayride:core/types@0.0.64;
 }
 
 world hayride-silo {
-    import hayride:silo/threads@0.0.63;
-    import hayride:silo/process@0.0.63;
+    import hayride:silo/threads@0.0.64;
+    import hayride:silo/process@0.0.64;
 }
 
 world hayride-wac {
-    import hayride:wac/wac@0.0.63;
+    import hayride:wac/wac@0.0.64;
 }
