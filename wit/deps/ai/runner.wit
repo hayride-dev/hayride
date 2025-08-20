@@ -1,7 +1,7 @@
-package hayride:ai@0.0.63;
+package hayride:ai@0.0.64;
 
 interface runner {
-    use types.{message};
+    use types.{message, runner-options};
     use agents.{agent};
     use model.{format};
     use wasi:io/streams@0.2.0.{output-stream};
@@ -22,5 +22,8 @@ interface runner {
         data: func() -> string;
     }
 
-    invoke: func(message: message, agent: borrow<agent>, format: borrow<format>, graph: borrow<graph-execution-context-stream>, output-stream: option<borrow<output-stream>>) -> result<list<message>, error>;
+    resource runner {
+        constructor(options: runner-options);
+        invoke: func(message: message, agent: borrow<agent>, format: borrow<format>, graph: borrow<graph-execution-context-stream>, output-stream: option<borrow<output-stream>>) -> result<list<message>, error>;
+    }
 }
