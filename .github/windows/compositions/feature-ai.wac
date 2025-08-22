@@ -13,13 +13,13 @@ let tools = new hayride:default-tools@0.0.1 {
 let store = new hayride-core:cfg@0.0.1 {...};
 let agents = new hayride:default-agent@0.0.1 {
     context: context.context,
-    model: model.model,
     tools: tools.tools,
     ...
 };
 
 let runner = new hayride:default-runner@0.0.1 {
     agents: agents.agents,
+    model: model.model,
     ...
 };
 
