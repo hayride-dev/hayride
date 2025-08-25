@@ -1,5 +1,5 @@
 
-package hayride:mcp@0.0.62;
+package hayride:mcp@0.0.64;
 
 interface auth {
     enum error-code {

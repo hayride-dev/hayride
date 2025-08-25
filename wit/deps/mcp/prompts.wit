@@ -1,5 +1,5 @@
 
-package hayride:mcp@0.0.62;
+package hayride:mcp@0.0.64;
 
 interface prompts {
     use types.{get-prompt-params, get-prompt-result, list-prompts-result};

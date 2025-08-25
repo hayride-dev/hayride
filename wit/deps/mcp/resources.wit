@@ -1,5 +1,5 @@
 
-package hayride:mcp@0.0.62;
+package hayride:mcp@0.0.64;
 
 interface resources {
     use types.{read-resource-params, read-resource-result, list-resources-result, list-resource-templates-result};
