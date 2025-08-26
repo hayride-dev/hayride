@@ -9,7 +9,12 @@ hayride-host-traits = { workspace = true, features = ["postgres"] }
 hayride-utils = { workspace = true }
 
 anyhow = { workspace = true }
+log = { workspace = true }
 native-tls = { workspace = true }
 postgres-native-tls = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-tokio-postgres = { workspace = true }
+tokio-postgres = { workspace = true, features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"] }
+tokio-util = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["serde"] }
+serde_json = { workspace = true }

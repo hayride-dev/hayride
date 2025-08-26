@@ -202,8 +202,8 @@ impl<T> db::HostConnection for DBImpl<T>
 where
     T: DBView,
 {
-    fn query(&mut self, self_: Resource<Connection>, statement: String, params: Vec<db::DbValue>) -> wasmtime::Result<Result<db::QueryResult, Resource<Error>>> {
-        let connection = self.table().get(&self_)?;
+    fn query(&mut self, conn: Resource<Connection>, statement: String, params: Vec<db::DbValue>) -> wasmtime::Result<Result<db::QueryResult, Resource<Error>>> {
+        let connection = self.table().get(&conn)?;
         
         // Convert WIT params to host trait params
         let host_params: Vec<HostDBValue> = params.into_iter().map(convert_db_value_to_host).collect();

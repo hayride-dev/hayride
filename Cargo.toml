@@ -89,12 +89,12 @@ postgres-native-tls = "0.5.1"
 tokio-postgres = "0.7.13"
 
 # wac deps
-indexmap = "2.8.0"
-miette = "7.5.0"
-wac-graph = "0.6.1"
-wac-parser = "0.6.1"
-wac-resolver = "0.6.1"
-wac-types = "0.6.1"
+indexmap = "2.11.0"
+miette = "7.6.0"
+wac-graph = "0.8.0"
+wac-parser = "0.8.0"
+wac-resolver = "0.8.0"
+wac-types = "0.8.0"
 
 # ui deps
 chrono = "0.4.39"

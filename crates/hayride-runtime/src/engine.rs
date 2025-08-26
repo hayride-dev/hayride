@@ -7,6 +7,7 @@ use crate::core::CoreCtx;
 use crate::server::Server;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
+use crate::db::DBCtx;
 use crate::websocket::WebsocketServer;
 use crate::Host;
 
@@ -44,6 +45,7 @@ pub struct EngineBuilder {
     wac_enabled: bool,
     wasi_enabled: bool,
     core_enabled: bool,
+    db_enabled: bool,
 }
 
 impl EngineBuilder {
@@ -62,6 +64,7 @@ impl EngineBuilder {
             wac_enabled: false,
             wasi_enabled: true,
             core_enabled: true,
+            db_enabled: true,
         }
     }
 
@@ -120,6 +123,11 @@ impl EngineBuilder {
         self
     }
 
+    pub fn db_enabled(mut self, db_enabled: bool) -> Self {
+        self.db_enabled = db_enabled;
+        self
+    }
+
     pub fn build(self) -> Result<WasmtimeEngine> {
         let id = Uuid::new_v4();
 
@@ -155,6 +163,7 @@ impl EngineBuilder {
             wac_enabled: self.wac_enabled,
             wasi_enabled: self.wasi_enabled,
             core_enabled: self.core_enabled,
+            db_enabled: self.db_enabled,
         })
     }
 }
@@ -176,6 +185,7 @@ pub struct WasmtimeEngine {
     wac_enabled: bool,
     wasi_enabled: bool,
     core_enabled: bool,
+    db_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -211,6 +221,7 @@ impl WasmtimeEngine {
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                 silo_ctx: silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
+                db_ctx: DBCtx::new(),
                 table: ResourceTable::default(),
             },
         );
@@ -229,6 +240,7 @@ impl WasmtimeEngine {
         let mut silo: bool = false;
         let mut wac: bool = false;
         let mut core: bool = false;
+        let mut db: bool = false;
         wit.imports().iter().for_each(|i| {
             match i.name.namespace.as_str() {
                 "hayride" => match i.name.name.as_str() {
@@ -236,6 +248,7 @@ impl WasmtimeEngine {
                     "ai" => ai = true,
                     "wac" => wac = true,
                     "core" => core = true,
+                    "db" => db = true,
                     _ => {
                         log::debug!("unknown import Found: {}", i.name.name);
                     }
@@ -300,6 +313,14 @@ impl WasmtimeEngine {
             }
 
             crate::core::add_to_linker_sync(&mut linker)?;
+        }
+
+        if db {
+            if !self.db_enabled {
+                return Err(anyhow::anyhow!("DB is not enabled").into());
+            }
+
+            crate::db::add_to_linker_sync(&mut linker)?;
         }
 
         return Ok(linker);

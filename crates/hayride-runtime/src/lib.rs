@@ -12,6 +12,7 @@ use crate::ai::{AiCtx, AiView};
 use crate::core::{CoreCtx, CoreView};
 use crate::silo::{SiloCtx, SiloView};
 use crate::wac::{WacCtx, WacView};
+use crate::db::{DBCtx, DBView};
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -34,6 +35,7 @@ pub struct Host {
     ai_ctx: AiCtx,
     silo_ctx: SiloCtx,
     wac_ctx: WacCtx,
+    db_ctx: DBCtx,
     table: ResourceTable,
 }
 
@@ -85,6 +87,15 @@ impl SiloView for Host {
 impl WacView for Host {
     fn ctx(&mut self) -> &mut WacCtx {
         &mut self.wac_ctx
+    }
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.table
+    }
+}
+
+impl DBView for Host {
+    fn ctx(&mut self) -> &mut DBCtx {
+        &mut self.db_ctx
     }
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table

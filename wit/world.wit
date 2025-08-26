@@ -51,5 +51,5 @@ world hayride-wac {
 }
 
 world hayride-db {
-    import hayride:db/db@0.0.62;
+    import hayride:db/db@0.0.64;
 }

@@ -3,6 +3,7 @@ use crate::bindings::hayride_server::{HayrideServer, HayrideServerPre};
 use crate::core::CoreCtx;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
+use crate::db::DBCtx;
 use crate::Host;
 
 use anyhow::bail;
@@ -67,6 +68,7 @@ impl Server {
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                 silo_ctx: self.silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
+                db_ctx: DBCtx::new(),
                 table: ResourceTable::default(),
             },
         );

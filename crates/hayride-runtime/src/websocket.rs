@@ -26,6 +26,7 @@ use uuid::Uuid;
 
 use crate::ai::AiCtx;
 use crate::wac::WacCtx;
+use crate::db::DBCtx;
 use wasmtime::{component::ResourceTable, Result};
 
 // Trait extensions
@@ -87,6 +88,7 @@ impl WebsocketServer {
                     ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
                     silo_ctx: self.silo_ctx.clone(),
                     wac_ctx: WacCtx::new(self.registry_path.clone()),
+                    db_ctx: DBCtx::new(),
                     table: ResourceTable::default(),
                 },
             );
