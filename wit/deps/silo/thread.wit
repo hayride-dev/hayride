@@ -1,4 +1,4 @@
-package hayride:silo@0.0.64;
+package hayride:silo@0.0.65;
 
 interface threads {
     use types.{err-no, thread-metadata, thread-status};

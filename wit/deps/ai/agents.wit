@@ -1,10 +1,10 @@
-package hayride:ai@0.0.64;
+package hayride:ai@0.0.65;
 
 interface agents {
     use types.{message};
     use context.{context};
-    use hayride:mcp/tools@0.0.64.{tools};
-    use hayride:mcp/types@0.0.64.{tool, call-tool-params, call-tool-result};
+    use hayride:mcp/tools@0.0.65.{tools};
+    use hayride:mcp/types@0.0.65.{tool, call-tool-params, call-tool-result};
 
     enum error-code {
         capabilities-error,

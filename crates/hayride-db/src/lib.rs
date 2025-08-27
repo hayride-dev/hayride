@@ -1,7 +1,6 @@
 use anyhow::Result;
 
-use hayride_host_traits::db::{errors::ErrorCode, DBTrait, Connection, DBConnection};
-use hayride_host_traits::db::db::ColumnInfo;
+use hayride_host_traits::db::{errors::ErrorCode, DBTrait, Connection, DBConnection, Transaction, Rows, DBRows, Statement, DBStatement, IsolationLevel};
 
 use native_tls::TlsConnector;
 use postgres_native_tls::MakeTlsConnector;
@@ -32,24 +31,17 @@ impl DBBackend {
 }
 
 impl DBTrait for DBBackend {
-    fn connect(&mut self, _config: hayride_host_traits::db::db::DBConfig) -> std::result::Result<Connection, ErrorCode> {
-        // TODO: Use config to create connection
-        Err(ErrorCode::NotEnabled)
-    }
-
-    fn connect_string(&mut self, connection_string: String) -> Result<Connection, ErrorCode> {
+    fn open(&mut self, connection_string: String) -> Result<Connection, ErrorCode> {
          tokio::task::block_in_place(|| {
             let rt = get_db_runtime();
             let db = rt.block_on(PostgresDBConnection::new(&connection_string))
-                .map_err(|_| ErrorCode::ConnectionFailed)?;
+                .map_err(|_| ErrorCode::OpenFailed)?;
 
             let connection: Box<dyn DBConnection> = Box::new(db);
             return Ok(connection.into());
         })
     }
-
 }
-
 
 struct PostgresDBConnection {
     client: Arc<Mutex<Option<tokio_postgres::Client>>>,
@@ -96,29 +88,74 @@ impl Drop for PostgresDBConnection {
     }
 }
 
+struct PostgresStatement {
+    client: Arc<Mutex<Option<tokio_postgres::Client>>>,
+    statement: tokio_postgres::Statement,
+}
+
+impl PostgresStatement {
+    fn new(client: Arc<Mutex<Option<tokio_postgres::Client>>>, statement: tokio_postgres::Statement) -> Self {
+        Self {
+            client,
+            statement,
+        }
+    }
+}
+struct PostgresRows {
+    rows: Vec<tokio_postgres::Row>,
+    current_index: usize,
+}
+
+impl PostgresRows {
+    fn new(rows: Vec<tokio_postgres::Row>) -> Self {
+        Self {
+            rows,
+            current_index: 0,
+        }
+    }
+}
+
+impl DBRows for PostgresRows {
+    fn columns(&self) -> Vec<String> {
+        if self.rows.is_empty() {
+            return vec![];
+        }
+        
+        self.rows[0].columns().iter()
+            .map(|col| col.name().to_string())
+            .collect()
+    }
+
+    fn next(&mut self) -> Result<hayride_host_traits::db::db::Row, ErrorCode> {
+        if self.current_index >= self.rows.len() {
+            return Err(ErrorCode::EndOfRows);
+        }
+        
+        let row = &self.rows[self.current_index];
+        let db_row = row_to_dbvalue_row(row);
+        self.current_index += 1;
+        
+        Ok(db_row)
+    }
+
+    fn close(&mut self) -> Result<(), ErrorCode> {
+        self.rows.clear();
+        self.current_index = 0;
+        log::debug!("PostgresRows closed");
+        Ok(())
+    }
+}
+
 /// Convert a tokio_postgres::Row to a hayride Row containing DBValues
 fn row_to_dbvalue_row(row: &Row) -> hayride_host_traits::db::db::Row {
     let mut values = Vec::new();
-    
+
     for i in 0..row.len() {
         let value = postgres_value_to_dbvalue(row, i);
         values.push(value);
     }
-    
-    hayride_host_traits::db::db::Row(values)
-}
 
-/// Extract column information from a postgres row
-fn extract_column_info(row: &Row) -> Vec<ColumnInfo> {
-    row.columns().iter().map(|col| {
-        let pg_type = col.type_();
-        ColumnInfo {
-            name: col.name().to_string(),
-            type_oid: pg_type.oid(),
-            type_name: pg_type.name().to_string(),
-            nullable: true, // PostgreSQL doesn't provide nullable info in query results
-        }
-    }).collect()
+    hayride_host_traits::db::db::Row(values)
 }
 
 /// Convert a PostgreSQL value at a specific column index to DBValue
@@ -143,7 +180,7 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
         },
         Type::INT2 => {
             match row.try_get::<_, i16>(col_idx) {
-                Ok(val) => DBValue::Int16(val),
+                Ok(val) => DBValue::Int32(val as i32),
                 Err(_) => DBValue::Null,
             }
         },
@@ -161,25 +198,25 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
         },
         Type::FLOAT4 => {
             match row.try_get::<_, f32>(col_idx) {
-                Ok(val) => DBValue::Float32(val),
+                Ok(val) => DBValue::Float(val as f64),
                 Err(_) => DBValue::Null,
             }
         },
         Type::FLOAT8 => {
             match row.try_get::<_, f64>(col_idx) {
-                Ok(val) => DBValue::Float64(val),
+                Ok(val) => DBValue::Double(val),
                 Err(_) => DBValue::Null,
             }
         },
         Type::TEXT | Type::VARCHAR | Type::CHAR | Type::NAME => {
             match row.try_get::<_, String>(col_idx) {
-                Ok(val) => DBValue::Text(val),
+                Ok(val) => DBValue::Str(val),
                 Err(_) => DBValue::Null,
             }
         },
         Type::BYTEA => {
             match row.try_get::<_, Vec<u8>>(col_idx) {
-                Ok(val) => DBValue::Bytes(val),
+                Ok(val) => DBValue::Binary(val),
                 Err(_) => DBValue::Null,
             }
         },
@@ -221,11 +258,11 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
         },
         Type::TIMESTAMPTZ => {
             match row.try_get::<_, chrono::DateTime<chrono::Utc>>(col_idx) {
-                Ok(val) => DBValue::TimestampTz(val.to_rfc3339()),
+                Ok(val) => DBValue::Timestamp(val.to_rfc3339()),
                 Err(_) => {
                     // Fallback to string
                     match row.try_get::<_, String>(col_idx) {
-                        Ok(val) => DBValue::TimestampTz(val),
+                        Ok(val) => DBValue::Timestamp(val),
                         Err(_) => DBValue::Null,
                     }
                 }
@@ -233,11 +270,11 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
         },
         Type::UUID => {
             match row.try_get::<_, uuid::Uuid>(col_idx) {
-                Ok(val) => DBValue::Uuid(val.to_string()),
+                Ok(val) => DBValue::Str(val.to_string()),
                 Err(_) => {
                     // Fallback to string
                     match row.try_get::<_, String>(col_idx) {
-                        Ok(val) => DBValue::Uuid(val),
+                        Ok(val) => DBValue::Str(val),
                         Err(_) => DBValue::Null,
                     }
                 }
@@ -247,14 +284,14 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
             match row.try_get::<_, serde_json::Value>(col_idx) {
                 Ok(val) => {
                     match serde_json::to_vec(&val) {
-                        Ok(bytes) => DBValue::Json(bytes),
+                        Ok(bytes) => DBValue::Binary(bytes),
                         Err(_) => DBValue::Null,
                     }
                 },
                 Err(_) => {
                     // Fallback to string and convert to bytes
                     match row.try_get::<_, String>(col_idx) {
-                        Ok(val) => DBValue::Json(val.into_bytes()),
+                        Ok(val) => DBValue::Binary(val.into_bytes()),
                         Err(_) => DBValue::Null,
                     }
                 }
@@ -263,14 +300,14 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
         Type::NUMERIC => {
             // Fallback to string representation
             match row.try_get::<_, String>(col_idx) {
-                Ok(val) => DBValue::Numeric(val),
+                Ok(val) => DBValue::Str(val),
                 Err(_) => DBValue::Null,
             }
         },
         _ => {
             // For any other type, try to convert to string
             match row.try_get::<_, String>(col_idx) {
-                Ok(val) => DBValue::Custom(val),
+                Ok(val) => DBValue::Str(val),
                 Err(_) => DBValue::Null,
             }
         }
@@ -278,72 +315,37 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
 }
 
 impl DBConnection for PostgresDBConnection {
-    fn query(
-            &self,
-            statement: String,
-            params: Vec<hayride_host_traits::db::db::DBValue>,
-        ) -> std::result::Result<hayride_host_traits::db::QueryResult, ErrorCode> {
-            tokio::task::block_in_place(|| {
-                let rt = get_db_runtime();
-                rt.block_on(async {
-                    let client_guard = self.client.lock().await;
-                    match client_guard.as_ref() {
-                        Some(client) => {
-                            let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter().map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync)).collect();
-                            let rows = client.query(&statement, &param_refs[..]).await.map_err(|e| {
-                                log::warn!("PostgresDBConnection Query failed with error: {}", e);
-                                ErrorCode::QueryFailed
-                            })?;
-
-                            log::debug!("PostgresDBConnection Query executed successfully, processing {} rows", rows.len());
-
-                            if rows.is_empty() {
-                                return Ok(hayride_host_traits::db::QueryResult {
-                                    columns: vec![],
-                                    rows: vec![],
-                                });
-                            }
-
-                            // Extract column information from the first row
-                            let columns = extract_column_info(&rows[0]);
-                            
-                            // Convert all rows to DBValue rows
-                            let converted_rows: Vec<hayride_host_traits::db::db::Row> = rows.iter()
-                                .map(|row| row_to_dbvalue_row(row))
-                                .collect();
-
-                            let query_result = hayride_host_traits::db::QueryResult {
-                                columns,
-                                rows: converted_rows,
-                            };
-                            Ok(query_result)
-                        },
-                        None => Err(ErrorCode::ConnectionFailed),
-                    }
-                })
+    fn prepare(&self, query: String) -> Result<Statement, ErrorCode> {
+        tokio::task::block_in_place(|| {
+            let rt = get_db_runtime();
+            rt.block_on(async {
+                let client_guard = self.client.lock().await;
+                match client_guard.as_ref() {
+                    Some(client) => {
+                        let statement = client.prepare(&query).await.map_err(|e| {
+                            log::warn!("PostgresDBConnection prepare failed with error: {}", e);
+                            ErrorCode::PrepareFailed
+                        })?;
+                        
+                        let postgres_statement = PostgresStatement::new(
+                            self.client.clone(),
+                            statement,
+                        );
+                        
+                        let boxed_statement: Box<dyn DBStatement> = Box::new(postgres_statement);
+                        Ok(boxed_statement.into())
+                    },
+                    None => Err(ErrorCode::PrepareFailed),
+                }
             })
-        }
+        })
+    }
 
-    fn execute(
-            &self,
-            statement: String,
-            params: Vec<hayride_host_traits::db::db::DBValue>,
-        ) -> std::result::Result<u64, ErrorCode> {
-            tokio::task::block_in_place(|| {
-                let rt = get_db_runtime();
-                rt.block_on(async {
-                    let client_guard = self.client.lock().await;
-                    match client_guard.as_ref() {
-                        Some(client) => {
-                            let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter().map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync)).collect();
-                            let result = client.execute(&statement, &param_refs[..]).await.map_err(|_| ErrorCode::QueryFailed)?;
-                            Ok(result)
-                        },
-                        None => Err(ErrorCode::ConnectionFailed),
-                    }
-                })
-            })
-        }
+    fn begin_transaction(&mut self, _isolation_level: IsolationLevel, _read_only: bool) -> std::result::Result<Transaction, ErrorCode> {
+        // Note: tokio-postgres transactions are tied to the client instance and need to be managed differently.
+        log::warn!("PostgresDBConnection begin_transaction not fully implemented");
+        Err(ErrorCode::NotEnabled)
+    }
 
     fn close(&mut self) -> std::result::Result<(), ErrorCode> {
         tokio::task::block_in_place(|| {
@@ -365,3 +367,99 @@ impl DBConnection for PostgresDBConnection {
         })
     }
 }
+
+impl DBStatement for PostgresStatement {
+    fn query(&self, params: Vec<hayride_host_traits::db::db::DBValue>) -> std::result::Result<Rows, ErrorCode> {
+        tokio::task::block_in_place(|| {
+            let rt = get_db_runtime();
+            rt.block_on(async {
+                let client_guard = self.client.lock().await;
+                match client_guard.as_ref() {
+                    Some(client) => {
+                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter().map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync)).collect();
+                        let rows = client.query(&self.statement, &param_refs[..]).await.map_err(|e| {
+                            log::warn!("PostgresStatement Query failed with error: {}", e);
+                            ErrorCode::QueryFailed
+                        })?;
+
+                        log::debug!("PostgresStatement Query executed successfully, processing {} rows", rows.len());
+
+                        let postgres_rows = PostgresRows::new(rows);
+                        let boxed_rows: Box<dyn DBRows> = Box::new(postgres_rows);
+                        Ok(boxed_rows.into())
+                    },
+                    None => Err(ErrorCode::QueryFailed),
+                }
+            })
+        })
+    }
+
+    fn execute(&self, params: Vec<hayride_host_traits::db::db::DBValue>) -> std::result::Result<u64, ErrorCode> {
+        tokio::task::block_in_place(|| {
+            let rt = get_db_runtime();
+            rt.block_on(async {
+                let client_guard = self.client.lock().await;
+                match client_guard.as_ref() {
+                    Some(client) => {
+                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter().map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync)).collect();
+                        let result = client.execute(&self.statement, &param_refs[..]).await.map_err(|_| ErrorCode::ExecuteFailed)?;
+                        Ok(result)
+                    },
+                    None => Err(ErrorCode::ExecuteFailed),
+                }
+            })
+        })
+    }
+
+    fn number_parameters(&self) -> Result<u32, ErrorCode> {
+        Ok(self.statement.params().len() as u32)
+    }
+
+    fn close(&mut self) -> std::result::Result<(), ErrorCode> {
+        // PostgreSQL prepared statements don't need explicit closing
+        // They are automatically cleaned up when dropped
+        log::debug!("PostgresStatement closed (no-op)");
+        Ok(())
+    }
+}
+
+/*
+struct PostgresTransaction {
+    transaction: Option<tokio_postgres::Transaction<'static>>,
+}
+
+impl PostgresTransaction {
+    fn new(transaction: tokio_postgres::Transaction<'static>) -> Self {
+        Self {
+            transaction: Some(transaction),
+        }
+    }
+}
+
+impl DBTransaction for PostgresTransaction {
+    fn commit(&mut self) -> Result<(), ErrorCode> {
+        log::warn!("Transaction commit not fully implemented");
+        Err(ErrorCode::NotEnabled)
+    }
+
+    fn rollback(&mut self) -> Result<(), ErrorCode> {
+        log::warn!("Transaction rollback not fully implemented");
+        Err(ErrorCode::NotEnabled)
+    }
+
+    fn query(&self, _query: String, _params: Vec<hayride_host_traits::db::db::DBValue>) -> Result<Rows, ErrorCode> {
+        log::warn!("Transaction query not fully implemented");
+        Err(ErrorCode::NotEnabled)
+    }
+
+    fn execute(&self, _query: String, _params: Vec<hayride_host_traits::db::db::DBValue>) -> Result<u64, ErrorCode> {
+        log::warn!("Transaction execute not fully implemented");
+        Err(ErrorCode::NotEnabled)
+    }
+
+    fn prepare(&self, _query: String) -> Result<Statement, ErrorCode> {
+        log::warn!("Transaction prepare not fully implemented");
+        Err(ErrorCode::NotEnabled)
+    }
+}
+*/

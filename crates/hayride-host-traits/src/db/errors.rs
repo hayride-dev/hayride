@@ -7,10 +7,17 @@ pub struct Error {
 
 #[derive(Debug)]
 pub enum ErrorCode {
-    ConnectionFailed,
+    OpenFailed,
     QueryFailed,
     ExecuteFailed,
+    PrepareFailed,
     CloseFailed,
+    NumberParametersFailed,
+    BeginTransactionFailed,
+    CommitFailed,
+    RollbackFailed,
+    NextFailed,
+    EndOfRows,
     NotEnabled,
     /// Unsupported operation.
     Unknown,

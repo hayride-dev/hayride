@@ -1,12 +1,20 @@
-package hayride:db@0.0.64;
+package hayride:db@0.0.65;
 
 interface db {
+    use types.{db-value, isolation-level, row};
 
     enum error-code {
-        connection-failed,
+        open-failed,
         query-failed,
         execute-failed,
+        prepare-failed,
         close-failed,
+        number-parameters-failed,
+        begin-transaction-failed,
+        commit-failed,
+        rollback-failed,
+        next-failed,
+        end-of-rows,
         not-enabled,
         unknown
     }
@@ -18,102 +26,47 @@ interface db {
         data: func() -> string;
     }
 
-    /// Array element types (non-recursive)
-    variant array-element {
-        /// NULL value
-        null,
-        boolean(bool),
-        int16(s16),
-        int32(s32),
-        int64(s64),
-        float32(f32),
-        float64(f64),
-        text(string),
-        bytes(list<u8>),
-        date(string),
-        time(string),
-        timestamp(string),
-        timestamptz(string),
-        uuid(string),
-        json(list<u8>),
-        /// Numeric/decimal value - string representation for precision
-        numeric(string),
-        /// DB-specific types as raw string
-        custom(string),
+    resource rows {
+        // columns returns the names of the columns in the result set.
+        columns: func() -> list<string>;
+        // next returns the next row in the result set.
+        // returns an error with code end-of-rows when there are no more rows.
+        next: func() -> result<row, error>;
+        close: func() -> result<_, error>;
     }
 
-    /// Database value types
-    variant db-value {
-        /// NULL value
-        null,
-        boolean(bool),
-        int16(s16),
-        int32(s32),
-        int64(s64),
-        float32(f32),
-        float64(f64),
-        text(string),
-        bytes(list<u8>),
-        date(string),
-        time(string),
-        timestamp(string),
-        timestamptz(string),
-        uuid(string),
-        json(list<u8>),
-        /// Array element types (one-dimensional)
-        array(list<array-element>),
-        /// Numeric/decimal value - string representation for precision
-        numeric(string),
-        /// DB-specific types as raw string
-        custom(string),
+    resource statement {
+        // query executes a parameterized query returning rows
+        query: func(args: list<db-value>) -> result<rows, error>;
+        // execute a statement returning the number of affected rows
+        execute: func(args: list<db-value>) -> result<u64, error>;
+        // number-parameters returns the number of parameters expected by the statement
+        number-parameters: func() -> u32;
+        /// Close the statement
+        close: func() -> result<_, error>;
     }
 
-    type row = list<db-value>;
+    resource transaction {
+        // commit the transaction
+        commit: func() -> result<_, error>;
+        // rollback the transaction
+        rollback: func() -> result<_, error>;
 
-    record column-info {
-        name: string,
-        /// OID type identifier
-        type-oid: option<u32>,
-        /// Human-readable type name
-        type-name: option<string>,
-        /// Whether the column can be NULL
-        nullable: option<bool>,
-    }
-
-    record query-result {
-        columns: list<column-info>,
-        rows: list<row>,
+        query: func(query: string, args: list<db-value>) -> result<rows, error>;
+        execute: func(query: string, args: list<db-value>) -> result<u64, error>;
+        prepare: func(query: string) -> result<statement, error>;
     }
 
     resource connection {
-        query: func(statement: string, params: list<db-value>) -> result<query-result, error>;
-        // execute a statement returning the number of affected rows
-        execute: func(statement: string, params: list<db-value>) -> result<u64, error>;
+        // Prepare returns a prepared statement for this connection.
+        // Allows parameterized queries.
+        prepare: func(query: string) -> result<statement, error>;
+        // begin-transaction starts a new transaction with the given isolation level and read-only flag.
+        begin-transaction: func(isolation-level: isolation-level, read-only: bool) -> result<transaction, error>;
         /// Close the connection
         close: func() -> result<_, error>;
     }
 
-    record connection-config {
-        /// Database host
-        host: string,
-        /// Database port
-        port: option<u16>,
-        /// Database name
-        database: string,
-        /// Username
-        username: string,
-        /// Password
-        password: option<string>,
-        /// SSL mode: disable, require, verify-ca, verify-full
-        ssl-mode: option<string>,
-        /// Connection timeout in seconds
-        connect-timeout: option<u32>,
-        /// Additional connection parameters
-        params: option<list<tuple<string, string>>>,
-    }
-
-    /// Connect to a database using structured configuration
-    connect: func(config: connection-config) -> result<connection, error>;
-    /// Connect to a database using connection string
-    connect-string: func(connection-string: string) -> result<connection, error>;
+    /// Open returns a new connection to the database
+    open: func(name: string) -> result<connection, error>;
 }

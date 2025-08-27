@@ -1,0 +1,32 @@
+package hayride:db@0.0.65;
+
+interface types {
+    /// Database value types
+    variant db-value {
+        int32(s32),
+        int64(s64),
+        uint32(u32),
+        uint64(u64),
+        float(f64),
+        double(f64),
+        str(string),
+        boolean(bool),
+        date(string),
+        time(string),
+        timestamp(string),
+        binary(list<u8>),
+        null
+    }
+
+    enum isolation-level {
+        read-uncommitted,
+        read-committed,
+        write-committed,
+        repeatable-read,
+        snapshot,
+        serializable,
+        linearizable
+    }
+
+    type row = list<db-value>;
+}

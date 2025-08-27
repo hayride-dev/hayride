@@ -4,36 +4,34 @@ use super::errors::ErrorCode;
 use postgres_types::{ToSql, Type, IsNull};
 
 pub trait DBTrait: Send + Sync {
-    fn connect(&mut self, config: DBConfig) -> Result<Connection, ErrorCode>;
-    fn connect_string(&mut self, connection_string: String) -> Result<Connection, ErrorCode>;
+    fn open(&mut self, name: String) -> Result<Connection, ErrorCode>;
 }
 
 pub trait DBConnection: Send + Sync {
-    fn query(
-        &self,
-        statement: String,
-        params: Vec<DBValue>,
-    ) -> Result<QueryResult, ErrorCode>;
-    fn execute(
-        &self,
-        statement: String,
-        params: Vec<DBValue>,
-    ) -> Result<u64, ErrorCode>; // returns number of affected rows
+    fn prepare(&self, query: String) -> Result<Statement, ErrorCode>;
+    fn begin_transaction(&mut self, isolation_level: IsolationLevel, read_only: bool) -> Result<Transaction, ErrorCode>;
     fn close(&mut self) -> Result<(), ErrorCode>;
 }
 
-/// Configuration parameters for connecting to a database.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DBConfig {
-    pub host: String,
-    pub port: Option<u16>,
-    pub database: String,
-    pub username: String,
-    pub password: Option<String>,
-    pub ssl_mode: Option<String>,
-    pub connect_timeout: Option<u32>, // in seconds
-    // Additional options can be added as needed
-    pub params: Option<Vec<(String, String)>>,
+pub trait DBStatement: Send + Sync {
+    fn query(&self, params: Vec<DBValue>) -> Result<Rows, ErrorCode>;
+    fn execute(&self, params: Vec<DBValue>) -> Result<u64, ErrorCode>;
+    fn number_parameters(&self) -> Result<u32, ErrorCode>;
+    fn close(&mut self) -> Result<(), ErrorCode>;
+}
+
+pub trait DBRows: Send + Sync {
+    fn columns(&self) -> Vec<String>;
+    fn next(&mut self) -> Result<Row, ErrorCode>;
+    fn close(&mut self) -> Result<(), ErrorCode>;
+}
+
+pub trait DBTransaction: Send + Sync {
+    fn commit(&mut self) -> Result<(), ErrorCode>;
+    fn rollback(&mut self) -> Result<(), ErrorCode>;
+    fn query(&self, query: String, params: Vec<DBValue>) -> Result<Rows, ErrorCode>;
+    fn execute(&self, query: String, params: Vec<DBValue>) -> Result<u64, ErrorCode>;
+    fn prepare(&self, query: String) -> Result<Statement, ErrorCode>;
 }
 
 /// A backend-defined DB Connection
@@ -55,79 +53,92 @@ impl std::ops::DerefMut for Connection {
     }
 }
 
-/// Information about a single column in a query result set.
+/// A backend-defined prepared statement
+pub struct Statement(Box<dyn DBStatement>);
+impl From<Box<dyn DBStatement>> for Statement {
+    fn from(value: Box<dyn DBStatement>) -> Self {
+        Self(value)
+    }
+}
+impl std::ops::Deref for Statement {
+    type Target = dyn DBStatement;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+impl std::ops::DerefMut for Statement {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut()
+    }
+}
+
+pub struct Rows(Box<dyn DBRows>);
+impl From<Box<dyn DBRows>> for Rows {
+    fn from(value: Box<dyn DBRows>) -> Self {
+        Self(value)
+    }
+}
+impl std::ops::Deref for Rows {
+    type Target = dyn DBRows;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+impl std::ops::DerefMut for Rows {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut()
+    }
+}
+
+pub struct Transaction(Box<dyn DBTransaction>);
+impl From<Box<dyn DBTransaction>> for Transaction {
+    fn from(value: Box<dyn DBTransaction>) -> Self {
+        Self(value)
+    }
+}
+impl std::ops::Deref for Transaction {
+    type Target = dyn DBTransaction;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+impl std::ops::DerefMut for Transaction {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub struct ColumnInfo {
-    pub name: String,
-    // DB-specific type OID or identifier
-    pub type_oid: u32,
-    // Human-readable type name
-    pub type_name: String,
-    // Whether the column can be NULL
-    pub nullable: bool,
+pub enum IsolationLevel {
+    ReadUncommitted,
+    ReadCommitted,
+    WriteCommitted,
+    RepeatableRead,
+    Snapshot,
+    Serializable,
+    Linearizable,
 }
 
 /// A single row of DB values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Row(pub Vec<DBValue>);
 
-/// A Query result set.
-#[derive(Debug, Clone, PartialEq)]
-pub struct QueryResult {
-    pub columns: Vec<ColumnInfo>,
-    pub rows: Vec<Row>,
-}
-
-/// Array element types (non-recursive, matching WIT array-element)
-#[derive(Debug, Clone, PartialEq)]
-pub enum ArrayElement {
-    /// NULL value
-    Null,
-    Boolean(bool),
-    Int16(i16),
-    Int32(i32),
-    Int64(i64),
-    Float32(f32),
-    Float64(f64),
-    Text(String),
-    Bytes(Vec<u8>),
-    Date(String),
-    Time(String),
-    Timestamp(String),
-    TimestampTz(String),
-    Uuid(String),
-    Json(Vec<u8>),
-    /// Numeric/decimal value - string representation for precision
-    Numeric(String),
-    /// DB-specific types as raw string
-    Custom(String),
-}
-
 /// Database value types (matching WIT db-value variant)
 #[derive(Debug, Clone, PartialEq)]
 pub enum DBValue {
-    /// NULL value
-    Null,
-    Boolean(bool),
-    Int16(i16),
     Int32(i32),
     Int64(i64),
-    Float32(f32),
-    Float64(f64),
-    Text(String),
-    Bytes(Vec<u8>),
+    Uint32(u32),
+    Uint64(u64),
+    Float(f64),
+    Double(f64),
+    Str(String),
+    Boolean(bool),
     Date(String),
     Time(String),
     Timestamp(String),
-    TimestampTz(String),
-    Uuid(String),
-    Json(Vec<u8>),
-    /// Array element types (one-dimensional)
-    Array(Vec<ArrayElement>),
-    /// Numeric/decimal value - string representation for precision
-    Numeric(String),
-    /// DB-specific types as raw string
-    Custom(String),
+    Binary(Vec<u8>),
+    Null,
 }
 
 impl DBValue {
@@ -139,76 +150,38 @@ impl DBValue {
     /// Convert to a string representation (for debugging/display)
     pub fn to_string(&self) -> String {
         match self {
-            DBValue::Null => "NULL".to_string(),
-            DBValue::Boolean(b) => b.to_string(),
-            DBValue::Int16(i) => i.to_string(),
             DBValue::Int32(i) => i.to_string(),
             DBValue::Int64(i) => i.to_string(),
-            DBValue::Float32(f) => f.to_string(),
-            DBValue::Float64(f) => f.to_string(),
-            DBValue::Text(s) => s.clone(),
-            DBValue::Bytes(b) => format!("\\x{}", bytes_to_hex(b)),
+            DBValue::Uint32(i) => i.to_string(),
+            DBValue::Uint64(i) => i.to_string(),
+            DBValue::Float(f) => f.to_string(),
+            DBValue::Double(f) => f.to_string(),
+            DBValue::Str(s) => s.clone(),
+            DBValue::Boolean(b) => b.to_string(),
             DBValue::Date(s) => s.clone(),
             DBValue::Time(s) => s.clone(),
             DBValue::Timestamp(s) => s.clone(),
-            DBValue::TimestampTz(s) => s.clone(),
-            DBValue::Uuid(s) => s.clone(),
-            DBValue::Json(b) => String::from_utf8_lossy(b).to_string(),
-            DBValue::Array(arr) => {
-                let elements: Vec<String> = arr.iter().map(|e| e.to_string()).collect();
-                format!("[{}]", elements.join(", "))
-            }
-            DBValue::Numeric(s) => s.clone(),
-            DBValue::Custom(s) => s.clone(),
+            DBValue::Binary(b) => format!("\\x{}", bytes_to_hex(b)),
+            DBValue::Null => "NULL".to_string(),
         }
     }
 
     /// Get the type name as a string
     pub fn type_name(&self) -> &'static str {
         match self {
-            DBValue::Null => "null",
-            DBValue::Boolean(_) => "boolean",
-            DBValue::Int16(_) => "int16",
             DBValue::Int32(_) => "int32",
             DBValue::Int64(_) => "int64",
-            DBValue::Float32(_) => "float32",
-            DBValue::Float64(_) => "float64",
-            DBValue::Text(_) => "text",
-            DBValue::Bytes(_) => "bytes",
+            DBValue::Uint32(_) => "uint32",
+            DBValue::Uint64(_) => "uint64",
+            DBValue::Float(_) => "float",
+            DBValue::Double(_) => "double",
+            DBValue::Str(_) => "str",
+            DBValue::Boolean(_) => "boolean",
             DBValue::Date(_) => "date",
             DBValue::Time(_) => "time",
             DBValue::Timestamp(_) => "timestamp",
-            DBValue::TimestampTz(_) => "timestamptz",
-            DBValue::Uuid(_) => "uuid",
-            DBValue::Json(_) => "json",
-            DBValue::Array(_) => "array",
-            DBValue::Numeric(_) => "numeric",
-            DBValue::Custom(_) => "custom",
-        }
-    }
-}
-
-impl ArrayElement {
-    /// Convert to a string representation (for debugging/display)
-    pub fn to_string(&self) -> String {
-        match self {
-            ArrayElement::Null => "NULL".to_string(),
-            ArrayElement::Boolean(b) => b.to_string(),
-            ArrayElement::Int16(i) => i.to_string(),
-            ArrayElement::Int32(i) => i.to_string(),
-            ArrayElement::Int64(i) => i.to_string(),
-            ArrayElement::Float32(f) => f.to_string(),
-            ArrayElement::Float64(f) => f.to_string(),
-            ArrayElement::Text(s) => s.clone(),
-            ArrayElement::Bytes(b) => format!("\\x{}", bytes_to_hex(b)),
-            ArrayElement::Date(s) => s.clone(),
-            ArrayElement::Time(s) => s.clone(),
-            ArrayElement::Timestamp(s) => s.clone(),
-            ArrayElement::TimestampTz(s) => s.clone(),
-            ArrayElement::Uuid(s) => s.clone(),
-            ArrayElement::Json(b) => String::from_utf8_lossy(b).to_string(),
-            ArrayElement::Numeric(s) => s.clone(),
-            ArrayElement::Custom(s) => s.clone(),
+            DBValue::Binary(_) => "binary",
+            DBValue::Null => "null",
         }
     }
 }
@@ -227,12 +200,6 @@ impl From<bool> for DBValue {
     }
 }
 
-impl From<i16> for DBValue {
-    fn from(value: i16) -> Self {
-        DBValue::Int16(value)
-    }
-}
-
 impl From<i32> for DBValue {
     fn from(value: i32) -> Self {
         DBValue::Int32(value)
@@ -245,39 +212,45 @@ impl From<i64> for DBValue {
     }
 }
 
-impl From<f32> for DBValue {
-    fn from(value: f32) -> Self {
-        DBValue::Float32(value)
+impl From<u32> for DBValue {
+    fn from(value: u32) -> Self {
+        DBValue::Uint32(value)
+    }
+}
+
+impl From<u64> for DBValue {
+    fn from(value: u64) -> Self {
+        DBValue::Uint64(value)
     }
 }
 
 impl From<f64> for DBValue {
     fn from(value: f64) -> Self {
-        DBValue::Float64(value)
+        DBValue::Double(value)
     }
 }
 
 impl From<String> for DBValue {
     fn from(value: String) -> Self {
-        DBValue::Text(value)
+        DBValue::Str(value)
     }
 }
 
 impl From<&str> for DBValue {
     fn from(value: &str) -> Self {
-        DBValue::Text(value.to_string())
+        DBValue::Str(value.to_string())
     }
 }
 
 impl From<Vec<u8>> for DBValue {
     fn from(value: Vec<u8>) -> Self {
-        DBValue::Bytes(value)
+        DBValue::Binary(value)
     }
 }
 
 impl From<&[u8]> for DBValue {
     fn from(value: &[u8]) -> Self {
-        DBValue::Bytes(value.to_vec())
+        DBValue::Binary(value.to_vec())
     }
 }
 
@@ -298,93 +271,24 @@ impl ToSql for DBValue {
     fn to_sql(&self, ty: &Type, out: &mut bytes::BytesMut) -> Result<IsNull, Box<dyn std::error::Error + Sync + Send>> {
         match self {
             DBValue::Null => Ok(IsNull::Yes),
-            DBValue::Boolean(b) => b.to_sql(ty, out),
-            DBValue::Int16(i) => i.to_sql(ty, out),
             DBValue::Int32(i) => i.to_sql(ty, out),
             DBValue::Int64(i) => i.to_sql(ty, out),
-            DBValue::Float32(f) => f.to_sql(ty, out),
-            DBValue::Float64(f) => f.to_sql(ty, out),
-            DBValue::Text(s) => s.to_sql(ty, out),
-            DBValue::Bytes(b) => b.to_sql(ty, out),
-            DBValue::Date(s) => {
-                // For date, we'll pass it as a string and let PostgreSQL handle the conversion
-                s.to_sql(ty, out)
-            },
-            DBValue::Time(s) => {
-                // For time, we'll pass it as a string and let PostgreSQL handle the conversion
-                s.to_sql(ty, out)
-            },
-            DBValue::Timestamp(s) => {
-                // For timestamp, we'll pass it as a string and let PostgreSQL handle the conversion
-                s.to_sql(ty, out)
-            },
-            DBValue::TimestampTz(s) => {
-                // For timestamptz, we'll pass it as a string and let PostgreSQL handle the conversion
-                s.to_sql(ty, out)
-            },
-            DBValue::Uuid(s) => {
-                // For UUID, we'll pass it as a string and let PostgreSQL handle the conversion
-                s.to_sql(ty, out)
-            },
-            DBValue::Json(b) => {
-                // For JSON, convert bytes to string and pass as string
-                let json_str = String::from_utf8_lossy(b);
-                json_str.to_sql(ty, out)
-            },
-            DBValue::Array(arr) => {
-                // Convert to Vec of strings as a fallback
-                let string_vec: Vec<String> = arr.iter().map(|e| e.to_string()).collect();
-                string_vec.to_sql(ty, out)
-            },
-            DBValue::Numeric(s) => {
-                s.to_sql(ty, out)
-            },
-            DBValue::Custom(s) => {
-                // For custom types, pass as string
-                s.to_sql(ty, out)
-            },
+            DBValue::Uint32(i) => (*i as i64).to_sql(ty, out), // Convert to i64 for PostgreSQL
+            DBValue::Uint64(i) => (*i as i64).to_sql(ty, out), // Convert to i64 for PostgreSQL
+            DBValue::Float(f) => f.to_sql(ty, out),
+            DBValue::Double(f) => f.to_sql(ty, out),
+            DBValue::Str(s) => s.to_sql(ty, out),
+            DBValue::Boolean(b) => b.to_sql(ty, out),
+            DBValue::Date(s) => s.to_sql(ty, out),
+            DBValue::Time(s) => s.to_sql(ty, out),
+            DBValue::Timestamp(s) => s.to_sql(ty, out),
+            DBValue::Binary(b) => b.to_sql(ty, out),
         }
     }
 
     fn accepts(_ty: &Type) -> bool {
         // DBValue can potentially accept any PostgreSQL type
         // since it's designed to be a universal value container
-        true
-    }
-
-    postgres_types::to_sql_checked!();
-}
-
-#[cfg(feature = "postgres")]
-impl ToSql for ArrayElement {
-    fn to_sql(&self, ty: &Type, out: &mut bytes::BytesMut) -> Result<IsNull, Box<dyn std::error::Error + Sync + Send>> {
-        match self {
-            ArrayElement::Null => Ok(IsNull::Yes),
-            ArrayElement::Boolean(b) => b.to_sql(ty, out),
-            ArrayElement::Int16(i) => i.to_sql(ty, out),
-            ArrayElement::Int32(i) => i.to_sql(ty, out),
-            ArrayElement::Int64(i) => i.to_sql(ty, out),
-            ArrayElement::Float32(f) => f.to_sql(ty, out),
-            ArrayElement::Float64(f) => f.to_sql(ty, out),
-            ArrayElement::Text(s) => s.to_sql(ty, out),
-            ArrayElement::Bytes(b) => b.to_sql(ty, out),
-            ArrayElement::Date(s) => s.to_sql(ty, out),
-            ArrayElement::Time(s) => s.to_sql(ty, out),
-            ArrayElement::Timestamp(s) => s.to_sql(ty, out),
-            ArrayElement::TimestampTz(s) => s.to_sql(ty, out),
-            ArrayElement::Uuid(s) => s.to_sql(ty, out),
-            ArrayElement::Json(b) => {
-                let json_str = String::from_utf8_lossy(b);
-                json_str.to_sql(ty, out)
-            },
-            ArrayElement::Numeric(s) => {
-                s.to_sql(ty, out)
-            },
-            ArrayElement::Custom(s) => s.to_sql(ty, out),
-        }
-    }
-
-    fn accepts(_ty: &Type) -> bool {
         true
     }
 
