@@ -10,6 +10,9 @@ use tokio::sync::Mutex;
 use tokio::runtime::Runtime;
 use std::sync::OnceLock;
 use tokio_util::sync::CancellationToken;
+use futures::stream::Stream;
+use futures::StreamExt;
+use std::pin::Pin;
 
 #[derive(Clone)]
 pub struct DBBackend {
@@ -102,45 +105,55 @@ impl PostgresStatement {
     }
 }
 struct PostgresRows {
-    rows: Vec<tokio_postgres::Row>,
-    current_index: usize,
+    stream: Pin<Box<dyn Stream<Item = Result<tokio_postgres::Row, tokio_postgres::Error>> + Send + Sync>>,
+    columns: Vec<String>,
+    finished: bool,
 }
 
 impl PostgresRows {
-    fn new(rows: Vec<tokio_postgres::Row>) -> Self {
+    fn new(stream: Pin<Box<dyn Stream<Item = Result<tokio_postgres::Row, tokio_postgres::Error>> + Send + Sync>>, columns: Vec<String>) -> Self {
         Self {
-            rows,
-            current_index: 0,
+            stream,
+            columns,
+            finished: false,
         }
     }
 }
 
 impl DBRows for PostgresRows {
     fn columns(&self) -> Vec<String> {
-        if self.rows.is_empty() {
-            return vec![];
-        }
-        
-        self.rows[0].columns().iter()
-            .map(|col| col.name().to_string())
-            .collect()
+        self.columns.clone()
     }
 
     fn next(&mut self) -> Result<hayride_host_traits::db::db::Row, ErrorCode> {
-        if self.current_index >= self.rows.len() {
+        if self.finished {
             return Err(ErrorCode::EndOfRows);
         }
-        
-        let row = &self.rows[self.current_index];
-        let db_row = row_to_dbvalue_row(row);
-        self.current_index += 1;
-        
-        Ok(db_row)
+
+        tokio::task::block_in_place(|| {
+            let rt = get_db_runtime();
+            rt.block_on(async {
+                match self.stream.next().await {
+                    Some(Ok(row)) => {
+                        let db_row = row_to_dbvalue_row(&row);
+                        Ok(db_row)
+                    },
+                    Some(Err(e)) => {
+                        log::warn!("Error reading row from stream: {}", e);
+                        self.finished = true;
+                        Err(ErrorCode::QueryFailed)
+                    },
+                    None => {
+                        self.finished = true;
+                        Err(ErrorCode::EndOfRows)
+                    }
+                }
+            })
+        })
     }
 
     fn close(&mut self) -> Result<(), ErrorCode> {
-        self.rows.clear();
-        self.current_index = 0;
+        self.finished = true;
         log::debug!("PostgresRows closed");
         Ok(())
     }
@@ -376,15 +389,25 @@ impl DBStatement for PostgresStatement {
                 let client_guard = self.client.lock().await;
                 match client_guard.as_ref() {
                     Some(client) => {
-                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter().map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync)).collect();
-                        let rows = client.query(&self.statement, &param_refs[..]).await.map_err(|e| {
+                        // Convert DBValues to ToSql references for parameter passing
+                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter()
+                            .map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync))
+                            .collect();
+
+                        let stream = client.query_raw(&self.statement, param_refs).await.map_err(|e| {
                             log::warn!("PostgresStatement Query failed with error: {}", e);
                             ErrorCode::QueryFailed
                         })?;
 
-                        log::debug!("PostgresStatement Query executed successfully, processing {} rows", rows.len());
+                        // Get column information from the prepared statement
+                        let columns: Vec<String> = self.statement.columns().iter()
+                            .map(|col| col.name().to_string())
+                            .collect();
 
-                        let postgres_rows = PostgresRows::new(rows);
+                        log::debug!("PostgresStatement Query executed successfully, streaming results");
+
+                        let boxed_stream: Pin<Box<dyn Stream<Item = Result<tokio_postgres::Row, tokio_postgres::Error>> + Send + Sync>> = Box::pin(stream);
+                        let postgres_rows = PostgresRows::new(boxed_stream, columns);
                         let boxed_rows: Box<dyn DBRows> = Box::new(postgres_rows);
                         Ok(boxed_rows.into())
                     },
@@ -401,8 +424,12 @@ impl DBStatement for PostgresStatement {
                 let client_guard = self.client.lock().await;
                 match client_guard.as_ref() {
                     Some(client) => {
-                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter().map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync)).collect();
-                        let result = client.execute(&self.statement, &param_refs[..]).await.map_err(|_| ErrorCode::ExecuteFailed)?;
+                        // Convert DBValues to ToSql references for parameter passing
+                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params.iter()
+                            .map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync))
+                            .collect();
+
+                        let result = client.execute(&self.statement, &param_refs).await.map_err(|_| ErrorCode::ExecuteFailed)?;
                         Ok(result)
                     },
                     None => Err(ErrorCode::ExecuteFailed),
@@ -416,8 +443,6 @@ impl DBStatement for PostgresStatement {
     }
 
     fn close(&mut self) -> std::result::Result<(), ErrorCode> {
-        // PostgreSQL prepared statements don't need explicit closing
-        // They are automatically cleaned up when dropped
         log::debug!("PostgresStatement closed (no-op)");
         Ok(())
     }
