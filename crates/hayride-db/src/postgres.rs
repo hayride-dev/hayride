@@ -408,11 +408,15 @@ fn postgres_value_to_dbvalue(row: &Row, col_idx: usize) -> hayride_host_traits::
             }
         },
         Type::NUMERIC => {
-            // Fallback to string representation
-            match row.try_get::<_, String>(col_idx) {
-                Ok(val) => DBValue::Str(val),
-                Err(_) => DBValue::Null,
+            // Preferred: exact decimal
+            if let Ok(val) = row.try_get::<_, rust_decimal::Decimal>(col_idx) {
+                return hayride_host_traits::db::db::DBValue::Str(val.normalize().to_string());
             }
+
+            if let Ok(val) = row.try_get::<_, f64>(col_idx) {
+                return hayride_host_traits::db::db::DBValue::Double(val);
+            }
+            hayride_host_traits::db::db::DBValue::Null
         },
         _ => {
             // For any other type, try to convert to string

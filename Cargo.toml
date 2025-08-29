@@ -87,6 +87,7 @@ lancedb = { version = "0.18.2", features = ["sentence-transformers"] }
 native-tls = "0.2.14"
 postgres-native-tls = "0.5.1"
 tokio-postgres = "0.7.13"
+rust_decimal    = "1.27.0"
 
 # wac deps
 indexmap = "2.11.0"
