@@ -1,5 +1,6 @@
 use super::create_wasi_ctx;
 use crate::ai::AiCtx;
+use crate::mcp::McpCtx;
 use crate::bindings::hayride_cli::HayrideCliPre;
 use crate::bindings::hayride_server::HayrideServerPre;
 use crate::bindings::hayride_ws::HayrideWsPre;
@@ -41,6 +42,7 @@ pub struct EngineBuilder {
     envs: Vec<(String, String)>,
 
     ai_enabled: bool,
+    mcp_enabled: bool,
     silo_enabled: bool,
     wac_enabled: bool,
     wasi_enabled: bool,
@@ -60,6 +62,7 @@ impl EngineBuilder {
             envs: vec![],
 
             ai_enabled: false,
+            mcp_enabled: false,
             silo_enabled: false,
             wac_enabled: false,
             wasi_enabled: true,
@@ -100,6 +103,11 @@ impl EngineBuilder {
 
     pub fn ai_enabled(mut self, ai_enabled: bool) -> Self {
         self.ai_enabled = ai_enabled;
+        self
+    }
+
+    pub fn mcp_enabled(mut self, mcp_enabled: bool) -> Self {
+        self.mcp_enabled = mcp_enabled;
         self
     }
 
@@ -159,6 +167,7 @@ impl EngineBuilder {
             inherit_stdio: self.inherit_stdio,
             envs: self.envs,
             ai_enabled: self.ai_enabled,
+            mcp_enabled: self.mcp_enabled,
             silo_enabled: self.silo_enabled,
             wac_enabled: self.wac_enabled,
             wasi_enabled: self.wasi_enabled,
@@ -181,6 +190,7 @@ pub struct WasmtimeEngine {
     envs: Vec<(String, String)>,
 
     ai_enabled: bool,
+    mcp_enabled: bool,
     silo_enabled: bool,
     wac_enabled: bool,
     wasi_enabled: bool,
@@ -219,6 +229,7 @@ impl WasmtimeEngine {
                 http_ctx: WasiHttpCtx::new(),
                 core_ctx: core_ctx.clone(),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
+                mcp_ctx: McpCtx::new(),
                 silo_ctx: silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
                 db_ctx: DBCtx::new(),
@@ -237,6 +248,7 @@ impl WasmtimeEngine {
 
         let mut wasi: bool = false;
         let mut ai: bool = false;
+        let mut mcp: bool = false;
         let mut silo: bool = false;
         let mut wac: bool = false;
         let mut core: bool = false;
@@ -246,6 +258,7 @@ impl WasmtimeEngine {
                 "hayride" => match i.name.name.as_str() {
                     "silo" => silo = true,
                     "ai" => ai = true,
+                    "mcp" => mcp = true,
                     "wac" => wac = true,
                     "core" => core = true,
                     "db" => db = true,
@@ -289,6 +302,14 @@ impl WasmtimeEngine {
             }
 
             crate::ai::add_to_linker_sync(&mut linker)?;
+        }
+
+        if mcp {
+            if !self.mcp_enabled {
+                return Err(anyhow::anyhow!("MCP is not enabled").into());
+            }
+
+            crate::mcp::add_to_linker_sync(&mut linker)?;
         }
 
         if silo {

@@ -4,6 +4,7 @@ use crate::core::CoreCtx;
 use crate::db::DBCtx;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
+use crate::mcp::McpCtx;
 use crate::Host;
 
 use anyhow::bail;
@@ -66,6 +67,7 @@ impl Server {
                 http_ctx: WasiHttpCtx::new(),
                 core_ctx: self.core_ctx.clone(),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
+                mcp_ctx: McpCtx::new(),
                 silo_ctx: self.silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
                 db_ctx: DBCtx::new(),

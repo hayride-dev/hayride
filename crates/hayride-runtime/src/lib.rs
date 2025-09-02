@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod mcp;
 pub mod bindings;
 pub mod core;
 pub mod db;
@@ -9,6 +10,7 @@ pub mod wac;
 pub mod websocket;
 
 use crate::ai::{AiCtx, AiView};
+use crate::mcp::{McpCtx, McpView};
 use crate::core::{CoreCtx, CoreView};
 use crate::db::{DBCtx, DBView};
 use crate::silo::{SiloCtx, SiloView};
@@ -33,6 +35,7 @@ pub struct Host {
     http_ctx: WasiHttpCtx,
     core_ctx: CoreCtx,
     ai_ctx: AiCtx,
+    mcp_ctx: McpCtx,
     silo_ctx: SiloCtx,
     wac_ctx: WacCtx,
     db_ctx: DBCtx,
@@ -69,6 +72,15 @@ impl CoreView for Host {
 impl AiView for Host {
     fn ctx(&mut self) -> &mut AiCtx {
         &mut self.ai_ctx
+    }
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.table
+    }
+}
+
+impl McpView for Host {
+    fn ctx(&mut self) -> &mut McpCtx {
+        &mut self.mcp_ctx
     }
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
