@@ -23,6 +23,7 @@ members = [
     "crates/hayride-llama",
     "crates/hayride-wac",
     "crates/hayride-ui",
+    "crates/hayride-db",
 ]
 
 [workspace.package]
@@ -88,6 +89,7 @@ native-tls = "0.2.14"
 postgres-native-tls = "0.5.1"
 tokio-postgres = "0.7.13"
 rust_decimal    = "1.27.0"
+rusqlite  = "0.29"
 
 # wac deps
 indexmap = "2.11.0"

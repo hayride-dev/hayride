@@ -19,7 +19,7 @@ tokio-postgres = { workspace = true, features = ["with-chrono-0_4", "with-uuid-1
 rust_decimal = { workspace = true, features = ["db-postgres"] }
 
 # SQLite dependencies (optional)
-rusqlite = { version = "0.29", features = ["bundled", "chrono", "uuid"], optional = true }
+rusqlite = { workspace = true, features = ["bundled", "chrono", "uuid"], optional = true }
 
 # Common dependencies
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
