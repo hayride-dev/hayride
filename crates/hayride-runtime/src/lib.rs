@@ -1,18 +1,18 @@
 pub mod ai;
-pub mod mcp;
 pub mod bindings;
 pub mod core;
 pub mod db;
 pub mod engine;
+pub mod mcp;
 pub mod server;
 pub mod silo;
 pub mod wac;
 pub mod websocket;
 
 use crate::ai::{AiCtx, AiView};
-use crate::mcp::{McpCtx, McpView};
 use crate::core::{CoreCtx, CoreView};
 use crate::db::{DBCtx, DBView};
+use crate::mcp::{McpCtx, McpView};
 use crate::silo::{SiloCtx, SiloView};
 use crate::wac::{WacCtx, WacView};
 

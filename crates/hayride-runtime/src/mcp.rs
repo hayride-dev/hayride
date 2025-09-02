@@ -1,7 +1,7 @@
 mod mcp_impl;
 
-pub mod mcp;
 pub mod bindings;
+pub mod mcp;
 
 pub use mcp::McpCtx;
 pub use mcp::{McpImpl, McpView};

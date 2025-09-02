@@ -1,5 +1,5 @@
-use super::mcp::{McpImpl, McpView};
 use super::bindings::mcp::{auth, tools};
+use super::mcp::{McpImpl, McpView};
 
 use hayride_host_traits::mcp::auth::{ErrorCode as AuthErrorCode, Provider};
 use hayride_host_traits::mcp::tools::{ErrorCode as ToolsErrorCode, Tools};

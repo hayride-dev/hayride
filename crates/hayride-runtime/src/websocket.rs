@@ -25,8 +25,8 @@ use tungstenite::Message;
 use uuid::Uuid;
 
 use crate::ai::AiCtx;
-use crate::mcp::McpCtx;
 use crate::db::DBCtx;
+use crate::mcp::McpCtx;
 use crate::wac::WacCtx;
 use wasmtime::{component::ResourceTable, Result};
 

@@ -1,11 +1,9 @@
 use wasmtime::component::ResourceTable;
-pub struct McpCtx {
-}
+pub struct McpCtx {}
 
 impl McpCtx {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 
