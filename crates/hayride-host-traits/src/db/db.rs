@@ -1,7 +1,7 @@
 use super::errors::ErrorCode;
 
 #[cfg(feature = "postgres")]
-use postgres_types::{ToSql, Type, IsNull};
+use postgres_types::{IsNull, ToSql, Type};
 
 pub trait DBTrait: Send + Sync {
     fn open(&mut self, name: String) -> Result<Connection, ErrorCode>;
@@ -9,7 +9,11 @@ pub trait DBTrait: Send + Sync {
 
 pub trait DBConnection: Send + Sync {
     fn prepare(&self, query: String) -> Result<Statement, ErrorCode>;
-    fn begin_transaction(&mut self, isolation_level: IsolationLevel, read_only: bool) -> Result<Transaction, ErrorCode>;
+    fn begin_transaction(
+        &mut self,
+        isolation_level: IsolationLevel,
+        read_only: bool,
+    ) -> Result<Transaction, ErrorCode>;
     fn close(&mut self) -> Result<(), ErrorCode>;
 }
 
@@ -188,7 +192,8 @@ impl DBValue {
 
 /// Helper function to convert bytes to hex string without external dependencies
 fn bytes_to_hex(bytes: &[u8]) -> String {
-    bytes.iter()
+    bytes
+        .iter()
         .map(|b| format!("{:02x}", b))
         .collect::<String>()
 }
@@ -254,9 +259,9 @@ impl From<&[u8]> for DBValue {
     }
 }
 
-impl<T> From<Option<T>> for DBValue 
-where 
-    T: Into<DBValue>
+impl<T> From<Option<T>> for DBValue
+where
+    T: Into<DBValue>,
 {
     fn from(value: Option<T>) -> Self {
         match value {
@@ -268,7 +273,11 @@ where
 
 #[cfg(feature = "postgres")]
 impl ToSql for DBValue {
-    fn to_sql(&self, ty: &Type, out: &mut bytes::BytesMut) -> Result<IsNull, Box<dyn std::error::Error + Sync + Send>> {
+    fn to_sql(
+        &self,
+        ty: &Type,
+        out: &mut bytes::BytesMut,
+    ) -> Result<IsNull, Box<dyn std::error::Error + Sync + Send>> {
         match self {
             DBValue::Null => Ok(IsNull::Yes),
             DBValue::Int32(i) => i.to_sql(ty, out),

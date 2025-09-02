@@ -8,8 +8,7 @@ pub struct DBCtx {
 
 impl DBCtx {
     pub fn new() -> Self {
-        let db_backend: Box<hayride_db::DBBackend> =
-            Box::new(hayride_db::DBBackend::new());
+        let db_backend: Box<hayride_db::DBBackend> = Box::new(hayride_db::DBBackend::new());
         Self {
             db_backend: DBBackend(db_backend),
         }

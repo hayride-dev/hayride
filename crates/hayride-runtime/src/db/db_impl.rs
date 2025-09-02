@@ -1,8 +1,8 @@
 use crate::db::bindings::db::Statement;
-use crate::db::bindings::{db::ErrorCode, db};
+use crate::db::bindings::{db, db::ErrorCode};
 use crate::db::{DBImpl, DBView};
-use hayride_host_traits::db::{Error, Connection, Rows, IsolationLevel};
 use hayride_host_traits::db::db::{DBValue as HostDBValue, Statement as HostStatement};
+use hayride_host_traits::db::{Connection, Error, IsolationLevel, Rows};
 
 use wasmtime::component::Resource;
 use wasmtime::Result;
@@ -50,7 +50,7 @@ impl<T> db::Host for DBImpl<T>
 where
     T: DBView,
 {
-   fn open(&mut self, name: String) -> Result<Result<Resource<Connection>,Resource<Error>>> {
+    fn open(&mut self, name: String) -> Result<Result<Resource<Connection>, Resource<Error>>> {
         let ctx = self.ctx();
         match ctx.db_backend.open(name.into()) {
             Ok(conn) => {
@@ -66,7 +66,7 @@ where
                 Ok(Err(resource))
             }
         }
-   }
+    }
 }
 
 impl<T> db::HostError for DBImpl<T>
@@ -81,8 +81,12 @@ where
             hayride_host_traits::db::ErrorCode::ExecuteFailed => Ok(ErrorCode::ExecuteFailed),
             hayride_host_traits::db::ErrorCode::PrepareFailed => Ok(ErrorCode::PrepareFailed),
             hayride_host_traits::db::ErrorCode::CloseFailed => Ok(ErrorCode::CloseFailed),
-            hayride_host_traits::db::ErrorCode::NumberParametersFailed => Ok(ErrorCode::NumberParametersFailed),
-            hayride_host_traits::db::ErrorCode::BeginTransactionFailed => Ok(ErrorCode::BeginTransactionFailed),
+            hayride_host_traits::db::ErrorCode::NumberParametersFailed => {
+                Ok(ErrorCode::NumberParametersFailed)
+            }
+            hayride_host_traits::db::ErrorCode::BeginTransactionFailed => {
+                Ok(ErrorCode::BeginTransactionFailed)
+            }
             hayride_host_traits::db::ErrorCode::CommitFailed => Ok(ErrorCode::CommitFailed),
             hayride_host_traits::db::ErrorCode::RollbackFailed => Ok(ErrorCode::RollbackFailed),
             hayride_host_traits::db::ErrorCode::NextFailed => Ok(ErrorCode::NextFailed),
@@ -107,13 +111,17 @@ impl<T> db::HostConnection for DBImpl<T>
 where
     T: DBView,
 {
-    fn prepare(&mut self, self_: Resource<Connection>, query: String) -> wasmtime::Result<Result<Resource<Statement>, Resource<Error>>> {
+    fn prepare(
+        &mut self,
+        self_: Resource<Connection>,
+        query: String,
+    ) -> wasmtime::Result<Result<Resource<Statement>, Resource<Error>>> {
         let connection: &Connection = self.table().get(&self_)?;
         match connection.prepare(query) {
             Ok(statement) => {
                 let resource = self.table().push(statement)?;
                 Ok(Ok(resource))
-            },
+            }
             Err(code) => {
                 let error = Error {
                     code,
@@ -125,7 +133,17 @@ where
         }
     }
 
-    fn begin_transaction(&mut self,self_:wasmtime::component::Resource<Connection> ,isolation_level: db::IsolationLevel, read_only: bool) -> wasmtime::Result<std::result::Result<wasmtime::component::Resource<hayride_host_traits::db::Transaction>,wasmtime::component::Resource<Error>>> {
+    fn begin_transaction(
+        &mut self,
+        self_: wasmtime::component::Resource<Connection>,
+        isolation_level: db::IsolationLevel,
+        read_only: bool,
+    ) -> wasmtime::Result<
+        std::result::Result<
+            wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+            wasmtime::component::Resource<Error>,
+        >,
+    > {
         let connection: &mut Connection = self.table().get_mut(&self_)?;
 
         let isolation_level = match isolation_level {
@@ -142,7 +160,7 @@ where
             Ok(transaction) => {
                 let resource = self.table().push(transaction)?;
                 Ok(Ok(resource))
-            },
+            }
             Err(code) => {
                 let error = Error {
                     code,
@@ -154,7 +172,10 @@ where
         }
     }
 
-    fn close(&mut self, self_: Resource<Connection>) -> wasmtime::Result<Result<(), Resource<Error>>> {
+    fn close(
+        &mut self,
+        self_: Resource<Connection>,
+    ) -> wasmtime::Result<Result<(), Resource<Error>>> {
         let connection: &mut Connection = self.table().get_mut(&self_)?;
         match connection.close() {
             Ok(()) => Ok(Ok(())),
@@ -179,17 +200,27 @@ impl<T> db::HostStatement for DBImpl<T>
 where
     T: DBView,
 {
-    fn query(&mut self,statement: wasmtime::component::Resource<HostStatement>,args:wasmtime::component::__internal::Vec<db::DbValue>,) -> wasmtime::Result<std::result::Result<wasmtime::component::Resource<Rows>,wasmtime::component::Resource<Error>>> {
+    fn query(
+        &mut self,
+        statement: wasmtime::component::Resource<HostStatement>,
+        args: wasmtime::component::__internal::Vec<db::DbValue>,
+    ) -> wasmtime::Result<
+        std::result::Result<
+            wasmtime::component::Resource<Rows>,
+            wasmtime::component::Resource<Error>,
+        >,
+    > {
         let statement: &HostStatement = self.table().get(&statement)?;
-        
+
         // Convert WIT params to host trait params
-        let host_params: Vec<HostDBValue> = args.into_iter().map(convert_db_value_to_host).collect();
-        
+        let host_params: Vec<HostDBValue> =
+            args.into_iter().map(convert_db_value_to_host).collect();
+
         match statement.query(host_params) {
             Ok(result) => {
                 let resource = self.table().push(result)?;
                 Ok(Ok(resource))
-            },
+            }
             Err(code) => {
                 let error = Error {
                     code,
@@ -201,7 +232,10 @@ where
         }
     }
 
-    fn number_parameters(&mut self,self_:wasmtime::component::Resource<HostStatement>,) -> wasmtime::Result<u32> {
+    fn number_parameters(
+        &mut self,
+        self_: wasmtime::component::Resource<HostStatement>,
+    ) -> wasmtime::Result<u32> {
         let statement: &HostStatement = self.table().get(&self_)?;
         match statement.number_parameters() {
             Ok(num) => Ok(num),
@@ -212,11 +246,16 @@ where
         }
     }
 
-    fn execute(&mut self, statement: Resource<Statement>, params: Vec<db::DbValue>) -> Result<Result<u64, Resource<Error>>> {
+    fn execute(
+        &mut self,
+        statement: Resource<Statement>,
+        params: Vec<db::DbValue>,
+    ) -> Result<Result<u64, Resource<Error>>> {
         let statement: &HostStatement = self.table().get(&statement)?;
-        
+
         // Convert WIT params to host trait params
-        let host_params: Vec<HostDBValue> = params.into_iter().map(convert_db_value_to_host).collect();
+        let host_params: Vec<HostDBValue> =
+            params.into_iter().map(convert_db_value_to_host).collect();
 
         match statement.execute(host_params) {
             Ok(affected_rows) => Ok(Ok(affected_rows)),
@@ -231,7 +270,10 @@ where
         }
     }
 
-    fn close(&mut self, statement: Resource<Statement>) -> wasmtime::Result<Result<(), Resource<Error>>> {
+    fn close(
+        &mut self,
+        statement: Resource<Statement>,
+    ) -> wasmtime::Result<Result<(), Resource<Error>>> {
         let statement: &mut HostStatement = self.table().get_mut(&statement)?;
         match statement.close() {
             Ok(()) => Ok(Ok(())),
@@ -256,8 +298,12 @@ impl<T> db::HostTransaction for DBImpl<T>
 where
     T: DBView,
 {
-    fn commit(&mut self,self_:wasmtime::component::Resource<hayride_host_traits::db::Transaction>,) -> wasmtime::Result<std::result::Result<(),wasmtime::component::Resource<Error>>> {
-        let transaction: &mut hayride_host_traits::db::Transaction = self.table().get_mut(&self_)?;
+    fn commit(
+        &mut self,
+        self_: wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+    ) -> wasmtime::Result<std::result::Result<(), wasmtime::component::Resource<Error>>> {
+        let transaction: &mut hayride_host_traits::db::Transaction =
+            self.table().get_mut(&self_)?;
         match transaction.commit() {
             Ok(()) => Ok(Ok(())),
             Err(code) => {
@@ -271,8 +317,12 @@ where
         }
     }
 
-    fn rollback(&mut self,self_:wasmtime::component::Resource<hayride_host_traits::db::Transaction>,) -> wasmtime::Result<std::result::Result<(),wasmtime::component::Resource<Error>>> {
-        let transaction: &mut hayride_host_traits::db::Transaction = self.table().get_mut(&self_)?;
+    fn rollback(
+        &mut self,
+        self_: wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+    ) -> wasmtime::Result<std::result::Result<(), wasmtime::component::Resource<Error>>> {
+        let transaction: &mut hayride_host_traits::db::Transaction =
+            self.table().get_mut(&self_)?;
         match transaction.rollback() {
             Ok(()) => Ok(Ok(())),
             Err(code) => {
@@ -286,12 +336,18 @@ where
         }
     }
 
-    fn execute(&mut self,self_:wasmtime::component::Resource<hayride_host_traits::db::Transaction>,query:wasmtime::component::__internal::String,args:wasmtime::component::__internal::Vec<db::DbValue>,) -> wasmtime::Result<std::result::Result<u64,wasmtime::component::Resource<Error>>> {
+    fn execute(
+        &mut self,
+        self_: wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+        query: wasmtime::component::__internal::String,
+        args: wasmtime::component::__internal::Vec<db::DbValue>,
+    ) -> wasmtime::Result<std::result::Result<u64, wasmtime::component::Resource<Error>>> {
         let transaction: &hayride_host_traits::db::Transaction = self.table().get(&self_)?;
-        
+
         // Convert WIT params to host trait params
-        let host_params: Vec<HostDBValue> = args.into_iter().map(convert_db_value_to_host).collect();
-        
+        let host_params: Vec<HostDBValue> =
+            args.into_iter().map(convert_db_value_to_host).collect();
+
         match transaction.execute(query, host_params) {
             Ok(affected_rows) => Ok(Ok(affected_rows)),
             Err(code) => {
@@ -305,16 +361,27 @@ where
         }
     }
 
-    fn query(&mut self,self_:wasmtime::component::Resource<hayride_host_traits::db::Transaction>,query:wasmtime::component::__internal::String,args:wasmtime::component::__internal::Vec<db::DbValue>,) -> wasmtime::Result<std::result::Result<wasmtime::component::Resource<Rows>,wasmtime::component::Resource<Error>>> {
+    fn query(
+        &mut self,
+        self_: wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+        query: wasmtime::component::__internal::String,
+        args: wasmtime::component::__internal::Vec<db::DbValue>,
+    ) -> wasmtime::Result<
+        std::result::Result<
+            wasmtime::component::Resource<Rows>,
+            wasmtime::component::Resource<Error>,
+        >,
+    > {
         let transaction: &hayride_host_traits::db::Transaction = self.table().get(&self_)?;
         // Convert WIT params to host trait params
-        let host_params: Vec<HostDBValue> = args.into_iter().map(convert_db_value_to_host).collect();
+        let host_params: Vec<HostDBValue> =
+            args.into_iter().map(convert_db_value_to_host).collect();
 
         match transaction.query(query, host_params) {
             Ok(rows) => {
                 let resource = self.table().push(rows)?;
                 Ok(Ok(resource))
-            },
+            }
             Err(code) => {
                 let error = Error {
                     code,
@@ -326,13 +393,22 @@ where
         }
     }
 
-    fn prepare(&mut self,self_:wasmtime::component::Resource<hayride_host_traits::db::Transaction>,query:wasmtime::component::__internal::String,) -> wasmtime::Result<std::result::Result<wasmtime::component::Resource<HostStatement>,wasmtime::component::Resource<Error>>> {
+    fn prepare(
+        &mut self,
+        self_: wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+        query: wasmtime::component::__internal::String,
+    ) -> wasmtime::Result<
+        std::result::Result<
+            wasmtime::component::Resource<HostStatement>,
+            wasmtime::component::Resource<Error>,
+        >,
+    > {
         let transaction: &hayride_host_traits::db::Transaction = self.table().get(&self_)?;
         match transaction.prepare(query) {
             Ok(statement) => {
                 let resource = self.table().push(statement)?;
                 Ok(Ok(resource))
-            },
+            }
             Err(code) => {
                 let error = Error {
                     code,
@@ -344,7 +420,10 @@ where
         }
     }
 
-    fn drop(&mut self,rep:wasmtime::component::Resource<hayride_host_traits::db::Transaction>) -> wasmtime::Result<()> {
+    fn drop(
+        &mut self,
+        rep: wasmtime::component::Resource<hayride_host_traits::db::Transaction>,
+    ) -> wasmtime::Result<()> {
         self.table().delete(rep)?;
         Ok(())
     }
@@ -354,19 +433,31 @@ impl<T> db::HostRows for DBImpl<T>
 where
     T: DBView,
 {
-    fn columns(&mut self,self_:wasmtime::component::Resource<Rows>,) -> wasmtime::Result<wasmtime::component::__internal::Vec<wasmtime::component::__internal::String>> {
+    fn columns(
+        &mut self,
+        self_: wasmtime::component::Resource<Rows>,
+    ) -> wasmtime::Result<
+        wasmtime::component::__internal::Vec<wasmtime::component::__internal::String>,
+    > {
         let rows: &Rows = self.table().get(&self_)?;
         let columns = rows.columns();
         Ok(columns)
     }
 
-    fn next(&mut self,self_:wasmtime::component::Resource<Rows>,) -> wasmtime::Result<std::result::Result<db::Row,wasmtime::component::Resource<Error>>> {
+    fn next(
+        &mut self,
+        self_: wasmtime::component::Resource<Rows>,
+    ) -> wasmtime::Result<std::result::Result<db::Row, wasmtime::component::Resource<Error>>> {
         let rows: &mut Rows = self.table().get_mut(&self_)?;
         match rows.next() {
             Ok(row) => {
-                let wit_row: db::Row = row.0.into_iter().map(convert_host_db_value_to_wit).collect();
+                let wit_row: db::Row = row
+                    .0
+                    .into_iter()
+                    .map(convert_host_db_value_to_wit)
+                    .collect();
                 Ok(Ok(wit_row))
-            },
+            }
             Err(code) => {
                 let error = Error {
                     code,
@@ -374,11 +465,14 @@ where
                 };
                 let resource = self.table().push(error)?;
                 Ok(Err(resource))
-            },
+            }
         }
     }
 
-    fn close(&mut self, self_:wasmtime::component::Resource<Rows>,) -> wasmtime::Result<std::result::Result<(),wasmtime::component::Resource<Error>>> {
+    fn close(
+        &mut self,
+        self_: wasmtime::component::Resource<Rows>,
+    ) -> wasmtime::Result<std::result::Result<(), wasmtime::component::Resource<Error>>> {
         let rows = self.table().get_mut(&self_)?;
         match rows.close() {
             Ok(()) => Ok(Ok(())),
@@ -393,7 +487,7 @@ where
         }
     }
 
-    fn drop(&mut self,rep:wasmtime::component::Resource<Rows>) -> wasmtime::Result<()> {
+    fn drop(&mut self, rep: wasmtime::component::Resource<Rows>) -> wasmtime::Result<()> {
         self.table().delete(rep)?;
         Ok(())
     }

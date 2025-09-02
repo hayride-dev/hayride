@@ -1,18 +1,18 @@
 pub mod ai;
 pub mod bindings;
 pub mod core;
+pub mod db;
 pub mod engine;
 pub mod server;
 pub mod silo;
 pub mod wac;
-pub mod db;
 pub mod websocket;
 
 use crate::ai::{AiCtx, AiView};
 use crate::core::{CoreCtx, CoreView};
+use crate::db::{DBCtx, DBView};
 use crate::silo::{SiloCtx, SiloView};
 use crate::wac::{WacCtx, WacView};
-use crate::db::{DBCtx, DBView};
 
 use async_trait::async_trait;
 use bytes::Bytes;

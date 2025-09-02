@@ -1,9 +1,9 @@
 use super::create_wasi_ctx;
 use crate::bindings::hayride_server::{HayrideServer, HayrideServerPre};
 use crate::core::CoreCtx;
+use crate::db::DBCtx;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
-use crate::db::DBCtx;
 use crate::Host;
 
 use anyhow::bail;

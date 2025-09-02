@@ -1,17 +1,11 @@
 #[cfg(feature = "sqlite")]
 use hayride_host_traits::db::{
-    errors::ErrorCode, 
-    DBConnection, 
-    Statement, 
-    Transaction, 
-    Rows, 
-    DBRows, 
-    DBStatement, 
-    IsolationLevel
+    errors::ErrorCode, DBConnection, DBRows, DBStatement, IsolationLevel, Rows, Statement,
+    Transaction,
 };
 
 #[cfg(feature = "sqlite")]
-use rusqlite::{Connection as SqliteConnection, params_from_iter};
+use rusqlite::{params_from_iter, Connection as SqliteConnection};
 #[cfg(feature = "sqlite")]
 use std::sync::{Arc, Mutex};
 
@@ -33,7 +27,7 @@ impl SQLiteDBConnection {
         };
 
         let connection = SqliteConnection::open(path)?;
-        
+
         Ok(SQLiteDBConnection {
             connection: Arc::new(Mutex::new(Some(connection))),
         })
@@ -43,23 +37,27 @@ impl SQLiteDBConnection {
 #[cfg(feature = "sqlite")]
 impl DBConnection for SQLiteDBConnection {
     fn prepare(&self, query: String) -> Result<Statement, ErrorCode> {
-        let connection_guard = self.connection.lock().map_err(|_| ErrorCode::PrepareFailed)?;
+        let connection_guard = self
+            .connection
+            .lock()
+            .map_err(|_| ErrorCode::PrepareFailed)?;
         match connection_guard.as_ref() {
             Some(_conn) => {
                 // For SQLite, we'll store the query and prepare it on execution
-                let sqlite_statement = SQLiteStatement::new(
-                    self.connection.clone(),
-                    query,
-                );
+                let sqlite_statement = SQLiteStatement::new(self.connection.clone(), query);
 
                 let boxed_statement: Box<dyn DBStatement> = Box::new(sqlite_statement);
                 Ok(boxed_statement.into())
-            },
+            }
             None => Err(ErrorCode::PrepareFailed),
         }
     }
 
-    fn begin_transaction(&mut self, _isolation_level: IsolationLevel, _read_only: bool) -> std::result::Result<Transaction, ErrorCode> {
+    fn begin_transaction(
+        &mut self,
+        _isolation_level: IsolationLevel,
+        _read_only: bool,
+    ) -> std::result::Result<Transaction, ErrorCode> {
         // TODO: Implement transaction support for SQLite
         log::warn!("SQLiteDBConnection begin_transaction not yet implemented");
         Err(ErrorCode::NotEnabled)
@@ -84,30 +82,33 @@ struct SQLiteStatement {
 #[cfg(feature = "sqlite")]
 impl SQLiteStatement {
     fn new(connection: Arc<Mutex<Option<SqliteConnection>>>, query: String) -> Self {
-        Self {
-            connection,
-            query,
-        }
+        Self { connection, query }
     }
 }
 
 #[cfg(feature = "sqlite")]
 impl DBStatement for SQLiteStatement {
-    fn query(&self, params: Vec<hayride_host_traits::db::db::DBValue>) -> std::result::Result<Rows, ErrorCode> {
+    fn query(
+        &self,
+        params: Vec<hayride_host_traits::db::db::DBValue>,
+    ) -> std::result::Result<Rows, ErrorCode> {
         let connection_guard = self.connection.lock().map_err(|_| ErrorCode::QueryFailed)?;
         match connection_guard.as_ref() {
             Some(conn) => {
-                let mut stmt = conn.prepare(&self.query).map_err(|_| ErrorCode::QueryFailed)?;
-                
-                // Convert DBValues to rusqlite parameters
-                let sqlite_params: Vec<rusqlite::types::Value> = params.iter()
-                    .map(dbvalue_to_sqlite_value)
-                    .collect();
+                let mut stmt = conn
+                    .prepare(&self.query)
+                    .map_err(|_| ErrorCode::QueryFailed)?;
 
-                let rows = stmt.query_map(params_from_iter(sqlite_params.iter()), |row| {
-                    // Convert SQLite row to DBValue row
-                    sqlite_row_to_dbvalue_row(row)
-                }).map_err(|_| ErrorCode::QueryFailed)?;
+                // Convert DBValues to rusqlite parameters
+                let sqlite_params: Vec<rusqlite::types::Value> =
+                    params.iter().map(dbvalue_to_sqlite_value).collect();
+
+                let rows = stmt
+                    .query_map(params_from_iter(sqlite_params.iter()), |row| {
+                        // Convert SQLite row to DBValue row
+                        sqlite_row_to_dbvalue_row(row)
+                    })
+                    .map_err(|_| ErrorCode::QueryFailed)?;
 
                 // Collect all rows (SQLite doesn't support streaming)
                 let mut collected_rows = Vec::new();
@@ -122,41 +123,56 @@ impl DBStatement for SQLiteStatement {
                 }
 
                 // Get column names
-                let column_names: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
+                let column_names: Vec<String> =
+                    stmt.column_names().iter().map(|s| s.to_string()).collect();
 
                 let sqlite_rows = SQLiteRows::new(collected_rows, column_names);
                 let boxed_rows: Box<dyn DBRows> = Box::new(sqlite_rows);
                 Ok(boxed_rows.into())
-            },
+            }
             None => Err(ErrorCode::QueryFailed),
         }
     }
 
-    fn execute(&self, params: Vec<hayride_host_traits::db::db::DBValue>) -> std::result::Result<u64, ErrorCode> {
-        let connection_guard = self.connection.lock().map_err(|_| ErrorCode::ExecuteFailed)?;
+    fn execute(
+        &self,
+        params: Vec<hayride_host_traits::db::db::DBValue>,
+    ) -> std::result::Result<u64, ErrorCode> {
+        let connection_guard = self
+            .connection
+            .lock()
+            .map_err(|_| ErrorCode::ExecuteFailed)?;
         match connection_guard.as_ref() {
             Some(conn) => {
-                let mut stmt = conn.prepare(&self.query).map_err(|_| ErrorCode::ExecuteFailed)?;
-                
-                // Convert DBValues to rusqlite parameters
-                let sqlite_params: Vec<rusqlite::types::Value> = params.iter()
-                    .map(dbvalue_to_sqlite_value)
-                    .collect();
+                let mut stmt = conn
+                    .prepare(&self.query)
+                    .map_err(|_| ErrorCode::ExecuteFailed)?;
 
-                let result = stmt.execute(params_from_iter(sqlite_params.iter())).map_err(|_| ErrorCode::ExecuteFailed)?;
+                // Convert DBValues to rusqlite parameters
+                let sqlite_params: Vec<rusqlite::types::Value> =
+                    params.iter().map(dbvalue_to_sqlite_value).collect();
+
+                let result = stmt
+                    .execute(params_from_iter(sqlite_params.iter()))
+                    .map_err(|_| ErrorCode::ExecuteFailed)?;
                 Ok(result as u64)
-            },
+            }
             None => Err(ErrorCode::ExecuteFailed),
         }
     }
 
     fn number_parameters(&self) -> Result<u32, ErrorCode> {
-        let connection_guard = self.connection.lock().map_err(|_| ErrorCode::PrepareFailed)?;
+        let connection_guard = self
+            .connection
+            .lock()
+            .map_err(|_| ErrorCode::PrepareFailed)?;
         match connection_guard.as_ref() {
             Some(conn) => {
-                let stmt = conn.prepare(&self.query).map_err(|_| ErrorCode::PrepareFailed)?;
+                let stmt = conn
+                    .prepare(&self.query)
+                    .map_err(|_| ErrorCode::PrepareFailed)?;
                 Ok(stmt.parameter_count() as u32)
-            },
+            }
             None => Err(ErrorCode::PrepareFailed),
         }
     }
@@ -208,7 +224,9 @@ impl DBRows for SQLiteRows {
 }
 
 #[cfg(feature = "sqlite")]
-fn dbvalue_to_sqlite_value(dbvalue: &hayride_host_traits::db::db::DBValue) -> rusqlite::types::Value {
+fn dbvalue_to_sqlite_value(
+    dbvalue: &hayride_host_traits::db::db::DBValue,
+) -> rusqlite::types::Value {
     use hayride_host_traits::db::db::DBValue;
     use rusqlite::types::Value;
 
@@ -230,17 +248,21 @@ fn dbvalue_to_sqlite_value(dbvalue: &hayride_host_traits::db::db::DBValue) -> ru
 }
 
 #[cfg(feature = "sqlite")]
-fn sqlite_row_to_dbvalue_row(row: &rusqlite::Row) -> Result<hayride_host_traits::db::db::Row, rusqlite::Error> {
+fn sqlite_row_to_dbvalue_row(
+    row: &rusqlite::Row,
+) -> Result<hayride_host_traits::db::db::Row, rusqlite::Error> {
     use hayride_host_traits::db::db::DBValue;
-    
+
     let mut values = Vec::new();
-    
+
     for i in 0..row.as_ref().column_count() {
         let value = match row.get_ref(i)? {
             rusqlite::types::ValueRef::Null => DBValue::Null,
             rusqlite::types::ValueRef::Integer(i) => DBValue::Int64(i),
             rusqlite::types::ValueRef::Real(f) => DBValue::Double(f),
-            rusqlite::types::ValueRef::Text(s) => DBValue::Str(String::from_utf8_lossy(s).to_string()),
+            rusqlite::types::ValueRef::Text(s) => {
+                DBValue::Str(String::from_utf8_lossy(s).to_string())
+            }
             rusqlite::types::ValueRef::Blob(b) => DBValue::Binary(b.to_vec()),
         };
         values.push(value);

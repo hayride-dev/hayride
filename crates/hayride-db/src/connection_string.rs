@@ -15,7 +15,9 @@ pub struct ConnectionStringParser {
 
 impl ConnectionStringParser {
     pub fn new(connection_string: &str) -> Self {
-        Self { connection_string: connection_string.trim().to_string() }
+        Self {
+            connection_string: connection_string.trim().to_string(),
+        }
     }
 
     pub fn get_database_type(&self) -> Result<DatabaseType> {
@@ -67,7 +69,11 @@ impl ConnectionStringParser {
             || s.starts_with("../")
             || s.starts_with('/')
             || s.contains('\\') && s.chars().nth(1) == Some(':'); // e.g., C:\...
-        if lower.ends_with(".db") || lower.ends_with(".sqlite") || lower.ends_with(".sqlite3") || looks_like_path {
+        if lower.ends_with(".db")
+            || lower.ends_with(".sqlite")
+            || lower.ends_with(".sqlite3")
+            || looks_like_path
+        {
             return DatabaseType::SQLite;
         }
 
@@ -84,7 +90,10 @@ impl ConnectionStringParser {
         }
 
         // MySQL-ish: `mariadb://` etc. when URL parsing failed (rare), or driver-specific aliases
-        if lower.starts_with("mariadb://") || lower.starts_with("mysql://") || lower.starts_with("mysqlx://") {
+        if lower.starts_with("mariadb://")
+            || lower.starts_with("mysql://")
+            || lower.starts_with("mysqlx://")
+        {
             return DatabaseType::MySQL;
         }
 
@@ -96,7 +105,16 @@ impl ConnectionStringParser {
 fn seems_like_libpq_keywords(s: &str) -> bool {
     // very light detection: space-separated tokens with '=', known-ish keys
     // Accepts: user=, password=, host=, port=, dbname=, application_name=, sslmode=, etc.
-    let keys = ["user", "password", "host", "port", "dbname", "application_name", "sslmode", "options"];
+    let keys = [
+        "user",
+        "password",
+        "host",
+        "port",
+        "dbname",
+        "application_name",
+        "sslmode",
+        "options",
+    ];
     let mut has_eq_tokens = false;
     for tok in s.split_whitespace() {
         if let Some((k, _v)) = tok.split_once('=') {

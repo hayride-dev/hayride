@@ -4,10 +4,10 @@ use crate::bindings::hayride_cli::HayrideCliPre;
 use crate::bindings::hayride_server::HayrideServerPre;
 use crate::bindings::hayride_ws::HayrideWsPre;
 use crate::core::CoreCtx;
+use crate::db::DBCtx;
 use crate::server::Server;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
-use crate::db::DBCtx;
 use crate::websocket::WebsocketServer;
 use crate::Host;
 
