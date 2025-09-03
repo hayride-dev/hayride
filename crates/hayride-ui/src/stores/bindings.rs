@@ -111,6 +111,7 @@ pub enum ResponseData {
     Messages(Vec<Message>),
     Path(String),
     Paths(Vec<String>),
+    Version(String),
 }
 
 impl From<api::ResponseData> for ResponseData {
@@ -127,6 +128,7 @@ impl From<api::ResponseData> for ResponseData {
             }
             api::ResponseData::Path(path) => ResponseData::Path(path),
             api::ResponseData::Paths(paths) => ResponseData::Paths(paths),
+            api::ResponseData::Version(v) => ResponseData::Version(v),
         }
     }
 }
@@ -145,6 +147,7 @@ impl From<ResponseData> for api::ResponseData {
             }
             ResponseData::Path(path) => api::ResponseData::Path(path),
             ResponseData::Paths(paths) => api::ResponseData::Paths(paths),
+            ResponseData::Version(v) => api::ResponseData::Version(v),
         }
     }
 }
@@ -153,7 +156,8 @@ impl From<ResponseData> for api::ResponseData {
 #[serde(rename_all = "kebab-case")]
 pub struct Message {
     pub role: Role,
-    pub content: Vec<Content>,
+    pub content: Vec<MessageContent>,
+    pub final_: bool,
 }
 
 impl From<api::Message> for Message {
@@ -161,6 +165,7 @@ impl From<api::Message> for Message {
         Self {
             role: m.role.into(),
             content: m.content.into_iter().map(|c| c.into()).collect(),
+            final_: m.final_,
         }
     }
 }
@@ -170,6 +175,7 @@ impl From<Message> for types::Message {
         Self {
             role: mc.role.into(),
             content: mc.content.into_iter().map(|c| c.into()).collect(),
+            final_: mc.final_,
         }
     }
 }
@@ -210,152 +216,37 @@ impl From<Role> for types::Role {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum Content {
+pub enum MessageContent {
     None,
-    Text(TextContent),
-    ToolInput(ToolInput),
-    ToolOutput(ToolOutput),
-    ToolSchema(ToolSchema),
+    Text(String),
+    Blob(Vec<u8>),
+    Tools(Vec<types::Tool>),
+    ToolInput(types::CallToolParams),
+    ToolOutput(types::CallToolResult),
 }
 
-impl From<types::Content> for Content {
-    fn from(c: types::Content) -> Self {
+impl From<types::MessageContent> for MessageContent {
+    fn from(c: types::MessageContent) -> Self {
         match c {
-            types::Content::None => Content::None,
-            types::Content::Text(t) => Content::Text(t.into()),
-            types::Content::ToolInput(ti) => Content::ToolInput(ti.into()),
-            types::Content::ToolOutput(to) => Content::ToolOutput(to.into()),
-            types::Content::ToolSchema(ts) => Content::ToolSchema(ts.into()),
+            types::MessageContent::None => MessageContent::None,
+            types::MessageContent::Text(t) => MessageContent::Text(t.into()),
+            types::MessageContent::Blob(b) => MessageContent::Blob(b),
+            types::MessageContent::Tools(ts) => MessageContent::Tools(ts.into()),
+            types::MessageContent::ToolInput(ti) => MessageContent::ToolInput(ti.into()),
+            types::MessageContent::ToolOutput(to) => MessageContent::ToolOutput(to.into()),
         }
     }
 }
 
-impl From<Content> for types::Content {
-    fn from(c: Content) -> Self {
+impl From<MessageContent> for types::MessageContent {
+    fn from(c: MessageContent) -> Self {
         match c {
-            Content::None => types::Content::None,
-            Content::Text(t) => types::Content::Text(t.into()),
-            Content::ToolInput(ti) => types::Content::ToolInput(ti.into()),
-            Content::ToolOutput(to) => types::Content::ToolOutput(to.into()),
-            Content::ToolSchema(ts) => types::Content::ToolSchema(ts.into()),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct TextContent {
-    pub text: String,
-    pub content_type: String,
-}
-
-impl From<types::TextContent> for TextContent {
-    fn from(tc: types::TextContent) -> Self {
-        Self {
-            text: tc.text,
-            content_type: tc.content_type,
-        }
-    }
-}
-
-impl From<TextContent> for types::TextContent {
-    fn from(tc: TextContent) -> Self {
-        Self {
-            text: tc.text,
-            content_type: tc.content_type,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ToolInput {
-    pub content_type: String,
-    pub id: String,
-    pub name: String,
-    pub input: Vec<(String, String)>,
-}
-
-impl From<types::ToolInput> for ToolInput {
-    fn from(ti: types::ToolInput) -> Self {
-        Self {
-            content_type: ti.content_type,
-            id: ti.id,
-            name: ti.name,
-            input: ti.input,
-        }
-    }
-}
-
-impl From<ToolInput> for types::ToolInput {
-    fn from(ti: ToolInput) -> Self {
-        Self {
-            content_type: ti.content_type,
-            id: ti.id,
-            name: ti.name,
-            input: ti.input,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ToolOutput {
-    pub content_type: String,
-    pub id: String,
-    pub name: String,
-    pub output: String,
-}
-
-impl From<types::ToolOutput> for ToolOutput {
-    fn from(to: types::ToolOutput) -> Self {
-        Self {
-            content_type: to.content_type,
-            id: to.id,
-            name: to.name,
-            output: to.output,
-        }
-    }
-}
-
-impl From<ToolOutput> for types::ToolOutput {
-    fn from(to: ToolOutput) -> Self {
-        Self {
-            content_type: to.content_type,
-            id: to.id,
-            name: to.name,
-            output: to.output,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ToolSchema {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub params_schema: String,
-}
-
-impl From<types::ToolSchema> for ToolSchema {
-    fn from(ts: types::ToolSchema) -> Self {
-        Self {
-            id: ts.id,
-            name: ts.name,
-            description: ts.description,
-            params_schema: ts.params_schema,
-        }
-    }
-}
-
-impl From<ToolSchema> for types::ToolSchema {
-    fn from(ts: ToolSchema) -> Self {
-        Self {
-            id: ts.id,
-            name: ts.name,
-            description: ts.description,
-            params_schema: ts.params_schema,
+            MessageContent::None => types::MessageContent::None,
+            MessageContent::Text(t) => types::MessageContent::Text(t.into()),
+            MessageContent::Blob(b) => types::MessageContent::Blob(b),
+            MessageContent::Tools(ts) => types::MessageContent::Tools(ts.into()),
+            MessageContent::ToolInput(ti) => types::MessageContent::ToolInput(ti.into()),
+            MessageContent::ToolOutput(to) => types::MessageContent::ToolOutput(to.into()),
         }
     }
 }
