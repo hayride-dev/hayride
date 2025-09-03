@@ -6,8 +6,6 @@ pub mod bindings;
 pub use ai::AiCtx;
 pub use ai::{AiImpl, AiView};
 
-pub use bindings::inference::GraphExecutionContext;
-
 use hayride_host_traits::ai::model::ModelRepositoryInner;
 use hayride_host_traits::ai::rag::RagInner;
 use hayride_host_traits::ai::BackendInner;

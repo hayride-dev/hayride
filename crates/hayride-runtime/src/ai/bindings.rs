@@ -10,7 +10,9 @@ mod generated {
         require_store_data_send: true,
 
         // Wrap functions returns with a result with error
-        trappable_imports: true,
+        imports: {
+            default: trappable,
+        },
         with: {
             // Upstream package dependencies
             "wasi:io": wasmtime_wasi::p2::bindings::io,

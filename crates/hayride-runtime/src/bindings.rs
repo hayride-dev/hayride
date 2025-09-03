@@ -9,7 +9,9 @@ pub mod hayride_cli {
         // This is helpful when sync bindings depend on generated functions from
         // async bindings as is the case with WASI in-tree.
         require_store_data_send: true,
-        async: true,
+        exports: {
+            default: async,
+        },
     });
 }
 
@@ -24,7 +26,9 @@ pub mod hayride_server {
         // This is helpful when sync bindings depend on generated functions from
         // async bindings as is the case with WASI in-tree.
         require_store_data_send: true,
-        async: true,
+        exports: {
+            default: async,
+        },
         with: {
             // Upstream package dependencies
             "wasi:io": wasmtime_wasi::p2::bindings::io,
@@ -55,7 +59,9 @@ pub mod hayride_ws {
         // This is helpful when sync bindings depend on generated functions from
         // async bindings as is the case with WASI in-tree.
         require_store_data_send: true,
-        async: true,
+        exports: {
+            default: async,
+        },
         with: {
             // Upstream package dependencies
             "wasi:io": wasmtime_wasi::p2::bindings::io,
