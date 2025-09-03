@@ -46,7 +46,7 @@ impl LlamaContextGuard {
     fn clear_kv_cache(&self) {
         if !self.context.is_null() {
             unsafe {
-                hayride_llama_rs_sys::llama_kv_cache_clear(self.context);
+                hayride_llama_rs_sys::llama_kv_self_clear(self.context);
             }
             log::debug!("Cleared KV cache to free memory");
         }
