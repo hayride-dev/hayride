@@ -46,7 +46,7 @@ impl LlamaContextGuard {
     fn clear_kv_cache(&self) {
         if !self.context.is_null() {
             unsafe {
-                hayride_llama_rs_sys::llama_kv_cache_clear(self.context);
+                hayride_llama_rs_sys::llama_kv_self_clear(self.context);
             }
             log::debug!("Cleared KV cache to free memory");
         }
@@ -335,13 +335,13 @@ fn process_compute(
     let llama_vocab = unsafe { hayride_llama_rs_sys::llama_model_get_vocab(llama_model.as_ptr()) };
 
     // Check for options and override defaults if set
-    let max_context = 30000;
-    let mut num_context = 8192;
+    let max_context = 128000; // 128k max context for llama.cpp
+    let mut num_context = 40960;
     let mut batch_size: i32 = 2048;
     let mut max_predict = 5000;
-    let mut temperature = 0.0; // Default to greedy
+    let mut temperature = 0.8; // Default to greedy
     let mut top_k = 20;
-    let mut top_p = 0.9;
+    let mut top_p = 0.95;
     let penalty_last_n = 512;
     let penalty_repeat = 1.25;
     let penalty_frequency = 0.5;
