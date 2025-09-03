@@ -10,7 +10,9 @@ mod generated {
         require_store_data_send: true,
 
         // Wrap functions returns with a result with error
-        trappable_imports: true,
+        imports: {
+            default: trappable,
+        },
         with: {
             "hayride:mcp/tools/tools": hayride_host_traits::mcp::tools::Tools,
             "hayride:mcp/tools/error": hayride_host_traits::mcp::tools::Error,

@@ -2,7 +2,9 @@ pub mod generated {
     wasmtime::component::bindgen!({
         path: "../../wit",
         world: "hayride-wac",
-        trappable_imports: true,
+        imports: {
+            default: trappable,
+        },
         with: {
             "hayride:wac/wac/error": hayride_host_traits::wac::Error,
         },

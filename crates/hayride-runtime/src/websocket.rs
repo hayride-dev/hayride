@@ -19,7 +19,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio::io::{AsyncRead, ReadBuf};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::sync::mpsc;
 use tungstenite::Message;
 use uuid::Uuid;
@@ -29,6 +29,7 @@ use crate::db::DBCtx;
 use crate::mcp::McpCtx;
 use crate::wac::WacCtx;
 use wasmtime::{component::ResourceTable, Result};
+use wasmtime_wasi::cli::{IsTerminal, StdoutStream};
 
 // Trait extensions
 use futures::sink::SinkExt;
@@ -182,6 +183,12 @@ impl WebsocketOutputPipe {
     }
 }
 
+impl IsTerminal for WebsocketOutputPipe {
+    fn is_terminal(&self) -> bool {
+        false
+    }
+}
+
 #[async_trait::async_trait]
 impl wasmtime_wasi::p2::OutputStream for WebsocketOutputPipe {
     fn write(&mut self, bytes: Bytes) -> Result<(), StreamError> {
@@ -219,13 +226,51 @@ impl wasmtime_wasi::p2::Pollable for WebsocketOutputPipe {
     async fn ready(&mut self) {}
 }
 
-impl wasmtime_wasi::p2::StdoutStream for WebsocketOutputPipe {
-    fn stream(&self) -> Box<dyn wasmtime_wasi::p2::OutputStream> {
+impl AsyncWrite for WebsocketOutputPipe {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        _cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        // Convert bytes to string
+        let data = std::str::from_utf8(buf)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        // Send the bytes to the channel
+        match self.sender.try_send(data.into()) {
+            Ok(()) => Poll::Ready(Ok(buf.len())),
+            Err(mpsc::error::TrySendError::Full(_)) => {
+                // Channel is full, would block
+                Poll::Pending
+            }
+            Err(mpsc::error::TrySendError::Closed(_)) => Poll::Ready(Err(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "websocket channel closed",
+            ))),
+        }
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        // WebSocket messages are immediately sent when written
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        _cx: &mut Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        // Nothing special needed for shutdown
+        Poll::Ready(Ok(()))
+    }
+}
+
+impl StdoutStream for WebsocketOutputPipe {
+    fn async_stream(&self) -> Box<dyn AsyncWrite + Send + Sync> {
         Box::new(self.clone())
     }
 
-    fn isatty(&self) -> bool {
-        false
+    fn p2_stream(&self) -> Box<dyn wasmtime_wasi::p2::OutputStream> {
+        Box::new(self.clone())
     }
 }
 
