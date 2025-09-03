@@ -243,6 +243,7 @@ where
                 .out_dir(out_dir.clone())
                 .model_path(model_path)
                 .ai_enabled(true)
+                .mcp_enabled(true)
                 // Disable silo for spawned morphs
                 .silo_enabled(false)
                 .wac_enabled(true)

@@ -1,4 +1,4 @@
-package hayride:ai@0.0.64;
+package hayride:ai@0.0.65;
 
 // This interface defines a stream of tensors. The stream is a sequence of tensors.
 

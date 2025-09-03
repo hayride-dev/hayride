@@ -25,6 +25,8 @@ use tungstenite::Message;
 use uuid::Uuid;
 
 use crate::ai::AiCtx;
+use crate::db::DBCtx;
+use crate::mcp::McpCtx;
 use crate::wac::WacCtx;
 use wasmtime::{component::ResourceTable, Result};
 
@@ -85,8 +87,10 @@ impl WebsocketServer {
                     http_ctx: WasiHttpCtx::new(),
                     core_ctx: self.core_ctx.clone(),
                     ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
+                    mcp_ctx: McpCtx::new(),
                     silo_ctx: self.silo_ctx.clone(),
                     wac_ctx: WacCtx::new(self.registry_path.clone()),
+                    db_ctx: DBCtx::new(),
                     table: ResourceTable::default(),
                 },
             );

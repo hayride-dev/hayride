@@ -1,0 +1,72 @@
+package hayride:db@0.0.65;
+
+interface db {
+    use types.{db-value, isolation-level, row};
+
+    enum error-code {
+        open-failed,
+        query-failed,
+        execute-failed,
+        prepare-failed,
+        close-failed,
+        number-parameters-failed,
+        begin-transaction-failed,
+        commit-failed,
+        rollback-failed,
+        next-failed,
+        end-of-rows,
+        not-enabled,
+        unknown
+    }
+
+    resource error {
+        /// return the error code.
+        code: func() -> error-code;
+        /// errors can be propagated with backend specific status through a string value.
+        data: func() -> string;
+    }
+
+    resource rows {
+        // columns returns the names of the columns in the result set.
+        columns: func() -> list<string>;
+        // next returns the next row in the result set.
+        // returns an error with code end-of-rows when there are no more rows.
+        next: func() -> result<row, error>;
+        close: func() -> result<_, error>;
+    }
+
+    resource statement {
+        // query executes a parameterized query returning rows
+        query: func(args: list<db-value>) -> result<rows, error>;
+        // execute a statement returning the number of affected rows
+        execute: func(args: list<db-value>) -> result<u64, error>;
+        // number-parameters returns the number of parameters expected by the statement
+        number-parameters: func() -> u32;
+        /// Close the statement
+        close: func() -> result<_, error>;
+    }
+
+    resource transaction {
+        // commit the transaction
+        commit: func() -> result<_, error>;
+        // rollback the transaction
+        rollback: func() -> result<_, error>;
+
+        query: func(query: string, args: list<db-value>) -> result<rows, error>;
+        execute: func(query: string, args: list<db-value>) -> result<u64, error>;
+        prepare: func(query: string) -> result<statement, error>;
+    }
+
+    resource connection {
+        // Prepare returns a prepared statement for this connection.
+        // Allows parameterized queries.
+        prepare: func(query: string) -> result<statement, error>;
+        // begin-transaction starts a new transaction with the given isolation level and read-only flag.
+        begin-transaction: func(isolation-level: isolation-level, read-only: bool) -> result<transaction, error>;
+        /// Close the connection
+        close: func() -> result<_, error>;
+    }
+
+    /// Open returns a new connection to the database
+    open: func(name: string) -> result<connection, error>;
+}

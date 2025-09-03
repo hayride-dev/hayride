@@ -4,6 +4,8 @@ use crate::bindings::hayride_cli::HayrideCliPre;
 use crate::bindings::hayride_server::HayrideServerPre;
 use crate::bindings::hayride_ws::HayrideWsPre;
 use crate::core::CoreCtx;
+use crate::db::DBCtx;
+use crate::mcp::McpCtx;
 use crate::server::Server;
 use crate::silo::SiloCtx;
 use crate::wac::WacCtx;
@@ -40,10 +42,12 @@ pub struct EngineBuilder {
     envs: Vec<(String, String)>,
 
     ai_enabled: bool,
+    mcp_enabled: bool,
     silo_enabled: bool,
     wac_enabled: bool,
     wasi_enabled: bool,
     core_enabled: bool,
+    db_enabled: bool,
 }
 
 impl EngineBuilder {
@@ -58,10 +62,12 @@ impl EngineBuilder {
             envs: vec![],
 
             ai_enabled: false,
+            mcp_enabled: false,
             silo_enabled: false,
             wac_enabled: false,
             wasi_enabled: true,
             core_enabled: true,
+            db_enabled: true,
         }
     }
 
@@ -100,6 +106,11 @@ impl EngineBuilder {
         self
     }
 
+    pub fn mcp_enabled(mut self, mcp_enabled: bool) -> Self {
+        self.mcp_enabled = mcp_enabled;
+        self
+    }
+
     pub fn silo_enabled(mut self, silo_enabled: bool) -> Self {
         self.silo_enabled = silo_enabled;
         self
@@ -117,6 +128,11 @@ impl EngineBuilder {
 
     pub fn core_enabled(mut self, core_enabled: bool) -> Self {
         self.core_enabled = core_enabled;
+        self
+    }
+
+    pub fn db_enabled(mut self, db_enabled: bool) -> Self {
+        self.db_enabled = db_enabled;
         self
     }
 
@@ -151,10 +167,12 @@ impl EngineBuilder {
             inherit_stdio: self.inherit_stdio,
             envs: self.envs,
             ai_enabled: self.ai_enabled,
+            mcp_enabled: self.mcp_enabled,
             silo_enabled: self.silo_enabled,
             wac_enabled: self.wac_enabled,
             wasi_enabled: self.wasi_enabled,
             core_enabled: self.core_enabled,
+            db_enabled: self.db_enabled,
         })
     }
 }
@@ -172,10 +190,12 @@ pub struct WasmtimeEngine {
     envs: Vec<(String, String)>,
 
     ai_enabled: bool,
+    mcp_enabled: bool,
     silo_enabled: bool,
     wac_enabled: bool,
     wasi_enabled: bool,
     core_enabled: bool,
+    db_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -209,8 +229,10 @@ impl WasmtimeEngine {
                 http_ctx: WasiHttpCtx::new(),
                 core_ctx: core_ctx.clone(),
                 ai_ctx: AiCtx::new(self.out_dir.clone(), self.model_path.clone())?,
+                mcp_ctx: McpCtx::new(),
                 silo_ctx: silo_ctx.clone(),
                 wac_ctx: WacCtx::new(self.registry_path.clone()),
+                db_ctx: DBCtx::new(),
                 table: ResourceTable::default(),
             },
         );
@@ -226,16 +248,20 @@ impl WasmtimeEngine {
 
         let mut wasi: bool = false;
         let mut ai: bool = false;
+        let mut mcp: bool = false;
         let mut silo: bool = false;
         let mut wac: bool = false;
         let mut core: bool = false;
+        let mut db: bool = false;
         wit.imports().iter().for_each(|i| {
             match i.name.namespace.as_str() {
                 "hayride" => match i.name.name.as_str() {
                     "silo" => silo = true,
                     "ai" => ai = true,
+                    "mcp" => mcp = true,
                     "wac" => wac = true,
                     "core" => core = true,
+                    "db" => db = true,
                     _ => {
                         log::debug!("unknown import Found: {}", i.name.name);
                     }
@@ -278,6 +304,14 @@ impl WasmtimeEngine {
             crate::ai::add_to_linker_sync(&mut linker)?;
         }
 
+        if mcp {
+            if !self.mcp_enabled {
+                return Err(anyhow::anyhow!("MCP is not enabled").into());
+            }
+
+            crate::mcp::add_to_linker_sync(&mut linker)?;
+        }
+
         if silo {
             if !self.silo_enabled {
                 return Err(anyhow::anyhow!("Silo is not enabled").into());
@@ -300,6 +334,14 @@ impl WasmtimeEngine {
             }
 
             crate::core::add_to_linker_sync(&mut linker)?;
+        }
+
+        if db {
+            if !self.db_enabled {
+                return Err(anyhow::anyhow!("DB is not enabled").into());
+            }
+
+            crate::db::add_to_linker_sync(&mut linker)?;
         }
 
         return Ok(linker);

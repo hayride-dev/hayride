@@ -1,5 +1,5 @@
 
-package hayride:mcp@0.0.64;
+package hayride:mcp@0.0.65;
 
 interface tools {
     use types.{call-tool-params, call-tool-result, list-tools-result};

@@ -1,8 +1,8 @@
-package hayride:core@0.0.64;
+package hayride:core@0.0.65;
 
 interface types {
-    use hayride:silo/threads@0.0.64.{thread-metadata, thread-status};
-    use hayride:ai/types@0.0.64.{message};
+    use hayride:silo/threads@0.0.65.{thread-metadata, thread-status};
+    use hayride:ai/types@0.0.65.{message};
 
     record cast {
         name: string,

@@ -53,6 +53,7 @@ async fn main() -> Result<()> {
         .wac_enabled(true)
         .wasi_enabled(true)
         .ai_enabled(true)
+        .mcp_enabled(true)
         .envs(vec![
             ("HAYRIDE_LOG_LEVEL".to_string(), log_level.clone()),
             ("HAYRIDE_BIN".to_string(), bin_path.clone()),

@@ -12,6 +12,7 @@ hayride-llama = { workspace = true, optional = true }
 hayride-lancedb = { workspace = true, optional = true }
 hayride-hf = { workspace = true, optional = true }
 hayride-wac = { workspace = true }
+hayride-db = { workspace = true }
 hayride-core = { workspace = true }
 
 anyhow = { workspace = true}
@@ -39,3 +40,5 @@ default = []
 lancedb = ["dep:hayride-lancedb"]
 llamacpp = ["dep:hayride-llama"]
 hf = ["dep:hayride-hf"]
+postgres = ["hayride-db/postgres"]
+sqlite = ["hayride-db/sqlite"]

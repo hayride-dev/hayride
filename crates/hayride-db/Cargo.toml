@@ -1,0 +1,39 @@
+[package]
+name = "hayride-db"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+hayride-host-traits = { workspace = true }
+hayride-utils = { workspace = true }
+
+anyhow = { workspace = true }
+log = { workspace = true }
+url = { workspace = true }
+
+# PostgreSQL dependencies (optional)
+native-tls = { workspace = true, optional = true }
+postgres-native-tls = { workspace = true, optional = true }
+postgres-types = { workspace = true, optional = true }
+tokio-postgres = { workspace = true, features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"], optional = true }
+rust_decimal = { workspace = true, features = ["db-postgres"], optional = true }
+bytes = { workspace = true, optional = true }
+
+# SQLite dependencies (optional)
+rusqlite = { workspace = true, features = ["bundled", "chrono", "uuid"], optional = true }
+
+# Common dependencies
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio-util = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["serde"] }
+serde_json = { workspace = true }
+futures = { workspace = true }
+
+[features]
+postgres = ["native-tls", "postgres-native-tls", "postgres-types", "tokio-postgres", "rust_decimal", "bytes"]
+sqlite = ["rusqlite"]
+
+[dev-dependencies]
+env_logger = "0.10"
