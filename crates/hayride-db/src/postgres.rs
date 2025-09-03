@@ -8,12 +8,332 @@ use futures::StreamExt;
 use native_tls::TlsConnector;
 use postgres_native_tls::MakeTlsConnector;
 use std::pin::Pin;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_postgres::Row;
 use tokio_util::sync::CancellationToken;
 
 use crate::get_db_runtime;
+
+// PostgreSQL-specific trait implementations for DBValue
+use hayride_host_traits::db::db::DBValue;
+use postgres_types::{IsNull, ToSql, Type};
+
+/// Wrapper for DBValue to implement PostgreSQL ToSql trait
+#[derive(Debug)]
+struct PostgresDBValue<'a>(&'a DBValue);
+
+impl<'a> ToSql for PostgresDBValue<'a> {
+    fn to_sql(
+        &self,
+        ty: &Type,
+        out: &mut bytes::BytesMut,
+    ) -> Result<IsNull, Box<dyn std::error::Error + Sync + Send>> {
+        // Handle NULL values first, regardless of type
+        if matches!(self.0, DBValue::Null) {
+            return Ok(IsNull::Yes);
+        }
+
+        // Primary dispatch based on PostgreSQL column type
+        match *ty {
+            // Numeric types
+            Type::INT2 => match self.0 {
+                DBValue::Int32(i) => (*i as i16).to_sql(ty, out),
+                DBValue::Int64(i) => (*i as i16).to_sql(ty, out),
+                DBValue::Uint32(u) => (*u as i16).to_sql(ty, out),
+                DBValue::Uint64(u) => (*u as i16).to_sql(ty, out),
+                DBValue::Str(s) => s.parse::<i16>()?.to_sql(ty, out),
+                _ => self.0.to_string().parse::<i16>()?.to_sql(ty, out),
+            },
+            Type::INT4 => match self.0 {
+                DBValue::Int32(i) => i.to_sql(ty, out),
+                DBValue::Int64(i) => (*i as i32).to_sql(ty, out),
+                DBValue::Uint32(u) => (*u as i32).to_sql(ty, out),
+                DBValue::Uint64(u) => (*u as i32).to_sql(ty, out),
+                DBValue::Str(s) => s.parse::<i32>()?.to_sql(ty, out),
+                _ => self.0.to_string().parse::<i32>()?.to_sql(ty, out),
+            },
+            Type::INT8 => match self.0 {
+                DBValue::Int64(i) => i.to_sql(ty, out),
+                DBValue::Int32(i) => (*i as i64).to_sql(ty, out),
+                DBValue::Uint32(u) => (*u as i64).to_sql(ty, out),
+                DBValue::Uint64(u) => (*u as i64).to_sql(ty, out),
+                DBValue::Str(s) => s.parse::<i64>()?.to_sql(ty, out),
+                _ => self.0.to_string().parse::<i64>()?.to_sql(ty, out),
+            },
+            Type::FLOAT4 => match self.0 {
+                DBValue::Float(f) => (*f as f32).to_sql(ty, out),
+                DBValue::Double(f) => (*f as f32).to_sql(ty, out),
+                DBValue::Int32(i) => (*i as f32).to_sql(ty, out),
+                DBValue::Int64(i) => (*i as f32).to_sql(ty, out),
+                DBValue::Str(s) => s.parse::<f32>()?.to_sql(ty, out),
+                _ => self.0.to_string().parse::<f32>()?.to_sql(ty, out),
+            },
+            Type::FLOAT8 => match self.0 {
+                DBValue::Double(f) => f.to_sql(ty, out),
+                DBValue::Float(f) => f.to_sql(ty, out),
+                DBValue::Int32(i) => (*i as f64).to_sql(ty, out),
+                DBValue::Int64(i) => (*i as f64).to_sql(ty, out),
+                DBValue::Str(s) => s.parse::<f64>()?.to_sql(ty, out),
+                _ => self.0.to_string().parse::<f64>()?.to_sql(ty, out),
+            },
+
+            // Boolean type
+            Type::BOOL => match self.0 {
+                DBValue::Boolean(b) => b.to_sql(ty, out),
+                DBValue::Int32(i) => (*i != 0).to_sql(ty, out),
+                DBValue::Str(s) => s.parse::<bool>()?.to_sql(ty, out),
+                _ => self.0.to_string().parse::<bool>()?.to_sql(ty, out),
+            },
+
+            // String types
+            Type::TEXT | Type::VARCHAR | Type::CHAR | Type::NAME => {
+                let string_value = match self.0 {
+                    DBValue::Str(s) => s.clone(),
+                    _ => self.0.to_string(),
+                };
+                string_value.to_sql(ty, out)
+            }
+
+            // Binary type
+            Type::BYTEA => match self.0 {
+                DBValue::Binary(b) => b.to_sql(ty, out),
+                DBValue::Str(s) => s.as_bytes().to_vec().to_sql(ty, out),
+                _ => self.0.to_string().as_bytes().to_vec().to_sql(ty, out),
+            },
+
+            // Date type - extract date from any temporal value
+            Type::DATE => {
+                let date = extract_date_from_value(self.0)?;
+                date.to_sql(ty, out)
+            }
+
+            // Time type - extract time from any temporal value
+            Type::TIME => {
+                let time = extract_time_from_value(self.0)?;
+                time.to_sql(ty, out)
+            }
+
+            // Timestamp type (no timezone)
+            Type::TIMESTAMP => {
+                let datetime = extract_naive_datetime_from_value(self.0)?;
+                datetime.to_sql(ty, out)
+            }
+
+            // Timestamp with timezone
+            Type::TIMESTAMPTZ => {
+                let datetime = extract_utc_datetime_from_value(self.0)?;
+                datetime.to_sql(ty, out)
+            }
+
+            // UUID type
+            Type::UUID => match self.0 {
+                DBValue::Str(s) => {
+                    let uuid = uuid::Uuid::parse_str(s)?;
+                    uuid.to_sql(ty, out)
+                }
+                _ => {
+                    let uuid = uuid::Uuid::parse_str(&self.0.to_string())?;
+                    uuid.to_sql(ty, out)
+                }
+            },
+
+            // JSON types
+            Type::JSON | Type::JSONB => match self.0 {
+                DBValue::Binary(b) => {
+                    let json_value: serde_json::Value = serde_json::from_slice(b)?;
+                    json_value.to_sql(ty, out)
+                }
+                DBValue::Str(s) => {
+                    let json_value: serde_json::Value = serde_json::from_str(s)?;
+                    json_value.to_sql(ty, out)
+                }
+                _ => {
+                    let json_value: serde_json::Value = serde_json::from_str(&self.0.to_string())?;
+                    json_value.to_sql(ty, out)
+                }
+            },
+
+            // Numeric/Decimal type
+            Type::NUMERIC => match self.0 {
+                DBValue::Str(s) => {
+                    let decimal = rust_decimal::Decimal::from_str(s)?;
+                    decimal.to_sql(ty, out)
+                }
+                DBValue::Double(f) => {
+                    let decimal = rust_decimal::Decimal::try_from(*f)?;
+                    decimal.to_sql(ty, out)
+                }
+                DBValue::Float(f) => {
+                    let decimal = rust_decimal::Decimal::try_from(*f)?;
+                    decimal.to_sql(ty, out)
+                }
+                DBValue::Int32(i) => {
+                    let decimal = rust_decimal::Decimal::from(*i);
+                    decimal.to_sql(ty, out)
+                }
+                DBValue::Int64(i) => {
+                    let decimal = rust_decimal::Decimal::from(*i);
+                    decimal.to_sql(ty, out)
+                }
+                _ => {
+                    let decimal = rust_decimal::Decimal::from_str(&self.0.to_string())?;
+                    decimal.to_sql(ty, out)
+                }
+            },
+
+            // Default fallback - try to convert to string
+            _ => {
+                let string_value = match self.0 {
+                    DBValue::Str(s) => s.clone(),
+                    _ => self.0.to_string(),
+                };
+                string_value.to_sql(ty, out)
+            }
+        }
+    }
+
+    fn accepts(_ty: &Type) -> bool {
+        // DBValue can potentially accept any PostgreSQL type
+        // since it's designed to be a universal value container
+        true
+    }
+
+    postgres_types::to_sql_checked!();
+}
+
+/// Extract a NaiveDate from any DBValue that might contain date information
+fn extract_date_from_value(
+    value: &DBValue,
+) -> Result<chrono::NaiveDate, Box<dyn std::error::Error + Sync + Send>> {
+    let date_str = match value {
+        DBValue::Date(s) => s,
+        DBValue::Timestamp(s) => s,
+        DBValue::Time(s) => s, // Might contain date part
+        DBValue::Str(s) => s,
+        _ => &value.to_string(),
+    };
+
+    // Try various date formats
+    // First try parsing as a full datetime and extract date
+    if let Ok(dt) = parse_datetime_string(date_str) {
+        return Ok(dt.date());
+    }
+
+    // Try parsing as date directly
+    if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        return Ok(date);
+    }
+
+    // Try parsing from RFC3339 and extract date
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(date_str) {
+        return Ok(dt.date_naive());
+    }
+
+    Err(format!("Cannot parse date from: {}", date_str).into())
+}
+
+/// Extract a NaiveTime from any DBValue that might contain time information
+fn extract_time_from_value(
+    value: &DBValue,
+) -> Result<chrono::NaiveTime, Box<dyn std::error::Error + Sync + Send>> {
+    let time_str = match value {
+        DBValue::Time(s) => s,
+        DBValue::Timestamp(s) => s,
+        DBValue::Str(s) => s,
+        _ => &value.to_string(),
+    };
+
+    // Try various time formats
+    // First try parsing as a full datetime and extract time
+    if let Ok(dt) = parse_datetime_string(time_str) {
+        return Ok(dt.time());
+    }
+
+    // Try parsing as time directly
+    if let Ok(time) = chrono::NaiveTime::parse_from_str(time_str, "%H:%M:%S") {
+        return Ok(time);
+    }
+
+    if let Ok(time) = chrono::NaiveTime::parse_from_str(time_str, "%H:%M:%S%.f") {
+        return Ok(time);
+    }
+
+    Err(format!("Cannot parse time from: {}", time_str).into())
+}
+
+/// Extract a NaiveDateTime from any DBValue that might contain datetime information
+fn extract_naive_datetime_from_value(
+    value: &DBValue,
+) -> Result<chrono::NaiveDateTime, Box<dyn std::error::Error + Sync + Send>> {
+    let datetime_str = match value {
+        DBValue::Timestamp(s) => s,
+        DBValue::Date(s) => s,
+        DBValue::Str(s) => s,
+        _ => &value.to_string(),
+    };
+
+    parse_datetime_string(datetime_str)
+}
+
+/// Extract a DateTime<Utc> from any DBValue that might contain datetime information
+fn extract_utc_datetime_from_value(
+    value: &DBValue,
+) -> Result<chrono::DateTime<chrono::Utc>, Box<dyn std::error::Error + Sync + Send>> {
+    let datetime_str = match value {
+        DBValue::Timestamp(s) => s,
+        DBValue::Date(s) => s,
+        DBValue::Str(s) => s,
+        _ => &value.to_string(),
+    };
+
+    // Try parsing as RFC3339 first (with timezone)
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(datetime_str) {
+        return Ok(dt.with_timezone(&chrono::Utc));
+    }
+
+    // Fall back to naive datetime and assume UTC
+    let naive_dt = parse_datetime_string(datetime_str)?;
+    Ok(chrono::DateTime::from_naive_utc_and_offset(
+        naive_dt,
+        chrono::Utc,
+    ))
+}
+
+/// Parse a datetime string with various common formats
+fn parse_datetime_string(
+    s: &str,
+) -> Result<chrono::NaiveDateTime, Box<dyn std::error::Error + Sync + Send>> {
+    // Strip Z suffix if present since NaiveDateTime doesn't handle timezone indicators
+    let s_clean = if s.ends_with('Z') {
+        &s[..s.len() - 1]
+    } else {
+        s
+    };
+
+    // Try ISO format without fractional seconds
+    if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(s_clean, "%Y-%m-%dT%H:%M:%S") {
+        return Ok(ndt);
+    }
+
+    // Try ISO format with fractional seconds
+    if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(s_clean, "%Y-%m-%dT%H:%M:%S%.f") {
+        return Ok(ndt);
+    }
+
+    // Try space-separated format
+    if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S") {
+        return Ok(ndt);
+    }
+
+    // Try space-separated format with fractional seconds
+    if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S%.f") {
+        return Ok(ndt);
+    }
+
+    Err(format!("Cannot parse datetime from: {}", s).into())
+}
 
 pub struct PostgresDBConnection {
     client: Arc<Mutex<Option<tokio_postgres::Client>>>,
@@ -142,10 +462,13 @@ impl DBStatement for PostgresStatement {
                 match client_guard.as_ref() {
                     Some(client) => {
                         // Convert DBValues to ToSql references for parameter passing
-                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params
-                            .iter()
-                            .map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync))
-                            .collect();
+                        let wrapped_params: Vec<PostgresDBValue> =
+                            params.iter().map(|p| PostgresDBValue(p)).collect();
+                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+                            wrapped_params
+                                .iter()
+                                .map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync))
+                                .collect();
 
                         let stream = client
                             .query_raw(&self.statement, param_refs)
@@ -196,10 +519,13 @@ impl DBStatement for PostgresStatement {
                 match client_guard.as_ref() {
                     Some(client) => {
                         // Convert DBValues to ToSql references for parameter passing
-                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = params
-                            .iter()
-                            .map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync))
-                            .collect();
+                        let wrapped_params: Vec<PostgresDBValue> =
+                            params.iter().map(|p| PostgresDBValue(p)).collect();
+                        let param_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+                            wrapped_params
+                                .iter()
+                                .map(|p| p as &(dyn tokio_postgres::types::ToSql + Sync))
+                                .collect();
 
                         let result = client
                             .execute(&self.statement, &param_refs)

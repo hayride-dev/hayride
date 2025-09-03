@@ -12,13 +12,3 @@ serde = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 wasmtime = { workspace = true }
 wasmtime-wasi = { workspace = true }
-
-# Additional dependencies for postgres feature
-postgres-types = { version = "0.2", optional = true, features = ["derive"] }
-chrono = { workspace = true, optional = true }
-uuid = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
-rust_decimal = { workspace = true, optional = true }
-
-[features]
-postgres = ["postgres-types", "chrono", "uuid", "serde_json", "rust_decimal"]

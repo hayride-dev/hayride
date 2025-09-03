@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-hayride-host-traits = { workspace = true, features = ["postgres"] }
+hayride-host-traits = { workspace = true }
 hayride-utils = { workspace = true }
 
 anyhow = { workspace = true }
@@ -15,8 +15,10 @@ url = { workspace = true }
 # PostgreSQL dependencies
 native-tls = { workspace = true }
 postgres-native-tls = { workspace = true }
+postgres-types = { workspace = true }
 tokio-postgres = { workspace = true, features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"] }
 rust_decimal = { workspace = true, features = ["db-postgres"] }
+bytes = { workspace = true }
 
 # SQLite dependencies (optional)
 rusqlite = { workspace = true, features = ["bundled", "chrono", "uuid"], optional = true }
