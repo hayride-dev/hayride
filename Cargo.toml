@@ -115,8 +115,9 @@ wit-bindgen = "0.41.0"
 lance = { version = "0.25.0", features = ["protoc"] }
 
 [features]
-default = ["lancedb", "llamacpp", "hf", "postgres"]
+default = ["lancedb", "llamacpp", "hf", "postgres", "sqlite"]
 lancedb = ["hayride-runtime/lancedb"]
 llamacpp = ["hayride-runtime/llamacpp"]
 hf = ["hayride-runtime/hf"]
 postgres = ["hayride-runtime/postgres"]
+sqlite = ["hayride-runtime/sqlite"]

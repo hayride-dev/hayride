@@ -1,20 +1,15 @@
-#[cfg(feature = "sqlite")]
 use hayride_host_traits::db::{
     errors::ErrorCode, DBConnection, DBRows, DBStatement, IsolationLevel, Rows, Statement,
     Transaction,
 };
 
-#[cfg(feature = "sqlite")]
 use rusqlite::{params_from_iter, Connection as SqliteConnection};
-#[cfg(feature = "sqlite")]
 use std::sync::{Arc, Mutex};
 
-#[cfg(feature = "sqlite")]
 pub struct SQLiteDBConnection {
     connection: Arc<Mutex<Option<SqliteConnection>>>,
 }
 
-#[cfg(feature = "sqlite")]
 impl SQLiteDBConnection {
     pub fn new(conn_str: &str) -> Result<Self, Box<dyn std::error::Error>> {
         // Remove sqlite:// prefix if present
@@ -34,7 +29,6 @@ impl SQLiteDBConnection {
     }
 }
 
-#[cfg(feature = "sqlite")]
 impl DBConnection for SQLiteDBConnection {
     fn prepare(&self, query: String) -> Result<Statement, ErrorCode> {
         let connection_guard = self
@@ -73,20 +67,17 @@ impl DBConnection for SQLiteDBConnection {
     }
 }
 
-#[cfg(feature = "sqlite")]
 struct SQLiteStatement {
     connection: Arc<Mutex<Option<SqliteConnection>>>,
     query: String,
 }
 
-#[cfg(feature = "sqlite")]
 impl SQLiteStatement {
     fn new(connection: Arc<Mutex<Option<SqliteConnection>>>, query: String) -> Self {
         Self { connection, query }
     }
 }
 
-#[cfg(feature = "sqlite")]
 impl DBStatement for SQLiteStatement {
     fn query(
         &self,
@@ -183,14 +174,12 @@ impl DBStatement for SQLiteStatement {
     }
 }
 
-#[cfg(feature = "sqlite")]
 struct SQLiteRows {
     rows: Vec<hayride_host_traits::db::db::Row>,
     columns: Vec<String>,
     current_index: usize,
 }
 
-#[cfg(feature = "sqlite")]
 impl SQLiteRows {
     fn new(rows: Vec<hayride_host_traits::db::db::Row>, columns: Vec<String>) -> Self {
         Self {
@@ -201,7 +190,6 @@ impl SQLiteRows {
     }
 }
 
-#[cfg(feature = "sqlite")]
 impl DBRows for SQLiteRows {
     fn columns(&self) -> Vec<String> {
         self.columns.clone()
@@ -223,7 +211,6 @@ impl DBRows for SQLiteRows {
     }
 }
 
-#[cfg(feature = "sqlite")]
 fn dbvalue_to_sqlite_value(
     dbvalue: &hayride_host_traits::db::db::DBValue,
 ) -> rusqlite::types::Value {
@@ -247,7 +234,6 @@ fn dbvalue_to_sqlite_value(
     }
 }
 
-#[cfg(feature = "sqlite")]
 fn sqlite_row_to_dbvalue_row(
     row: &rusqlite::Row,
 ) -> Result<hayride_host_traits::db::db::Row, rusqlite::Error> {
@@ -269,15 +255,4 @@ fn sqlite_row_to_dbvalue_row(
     }
 
     Ok(hayride_host_traits::db::db::Row(values))
-}
-
-// Provide a stub implementation when SQLite feature is not enabled
-#[cfg(not(feature = "sqlite"))]
-pub struct SQLiteDBConnection;
-
-#[cfg(not(feature = "sqlite"))]
-impl SQLiteDBConnection {
-    pub fn new(_conn_str: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        Err("SQLite support not compiled in. Enable the 'sqlite' feature.".into())
-    }
 }

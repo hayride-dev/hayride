@@ -4,7 +4,9 @@ use std::sync::OnceLock;
 use tokio::runtime::Runtime;
 
 pub mod connection_string;
+#[cfg(feature = "postgres")]
 pub mod postgres;
+#[cfg(feature = "sqlite")]
 pub mod sqlite;
 
 use connection_string::{ConnectionStringParser, DatabaseType};
@@ -35,15 +37,27 @@ impl DBBackend {
             .map_err(|_| ErrorCode::OpenFailed)?;
 
         match db_type {
-            DatabaseType::PostgreSQL => tokio::task::block_in_place(|| {
-                let rt = get_db_runtime();
-                rt.block_on(async {
-                    postgres::PostgresDBConnection::new(connection_string)
-                        .await
-                        .map(|conn| Box::new(conn) as Box<dyn DBConnection>)
-                        .map_err(|_| ErrorCode::OpenFailed)
-                })
-            }),
+            DatabaseType::PostgreSQL => {
+                #[cfg(feature = "postgres")]
+                {
+                    tokio::task::block_in_place(|| {
+                        let rt = get_db_runtime();
+                        rt.block_on(async {
+                            postgres::PostgresDBConnection::new(connection_string)
+                                .await
+                                .map(|conn| Box::new(conn) as Box<dyn DBConnection>)
+                                .map_err(|_| ErrorCode::OpenFailed)
+                        })
+                    })
+                }
+                #[cfg(not(feature = "postgres"))]
+                {
+                    log::warn!(
+                        "PostgreSQL support not compiled in. Enable the 'postgres' feature."
+                    );
+                    Err(ErrorCode::NotEnabled)
+                }
+            }
             DatabaseType::SQLite => {
                 #[cfg(feature = "sqlite")]
                 {
